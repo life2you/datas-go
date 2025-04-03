@@ -1,0 +1,44 @@
+2025-04-03 20:32:06,511 - root - INFO - 设置错误日志文件路径: /Users/life2you_mini/work/github/datas-go/logs/pump_portal_error.log
+2025-04-03 20:32:06,511 - root - INFO - 设置SQL日志文件路径: /Users/life2you_mini/work/github/datas-go/logs/sql.log
+2025-04-03 20:32:06,511 - root - INFO - SQL日志已启用，级别: DEBUG, 文件: /Users/life2you_mini/work/github/datas-go/logs/sql.log
+2025-04-03 20:32:06,511 - root - INFO - 日志系统已初始化，日志文件: /Users/life2you_mini/work/github/datas-go/logs/pump_portal.log
+2025-04-03 20:32:06,511 - root - INFO - 错误日志文件: /Users/life2you_mini/work/github/datas-go/logs/pump_portal_error.log
+2025-04-03 20:32:06,532 - root - INFO - 设置错误日志文件路径: /Users/life2you_mini/work/github/datas-go/logs/pump_portal_error.log
+2025-04-03 20:32:06,532 - root - INFO - 设置SQL日志文件路径: /Users/life2you_mini/work/github/datas-go/logs/sql.log
+2025-04-03 20:32:06,532 - root - INFO - SQL日志已启用，级别: DEBUG, 文件: /Users/life2you_mini/work/github/datas-go/logs/sql.log
+2025-04-03 20:32:06,532 - root - INFO - 日志系统已初始化，日志文件: /Users/life2you_mini/work/github/datas-go/logs/pump_portal.log
+2025-04-03 20:32:06,533 - root - INFO - 错误日志文件: /Users/life2you_mini/work/github/datas-go/logs/pump_portal_error.log
+2025-04-03 20:32:06,533 - src.utils.error_handler - INFO - 全局错误处理已设置
+2025-04-03 20:32:06,533 - API-Server - INFO - 启动API服务器 @ 0.0.0.0:8000
+2025-04-03 20:32:06,533 - API-Server - INFO - WebSocket监听线程已启动
+2025-04-03 20:32:06,533 - API-Server - INFO - WebSocket监听服务已禁用，跳过启动
+2025-04-03 20:32:06,533 - API-Server - INFO - 数据采集线程已启动
+2025-04-03 20:32:06,533 - API-Server - INFO - 代币回复数据采集服务已禁用，跳过启动
+2025-04-03 20:32:06,533 - src.api.web_api - INFO - 启动API服务器，监听 0.0.0.0:8000
+2025-04-03 20:32:06,535 - asyncio - DEBUG - Using selector: KqueueSelector
+2025-04-03 20:32:10,113 - src.api.web_api - INFO - 代币 HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe 没有交易记录（类型: all）
+2025-04-03 20:32:10,114 - src.api.web_api - INFO - 代币 HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe 没有回复记录
+2025-04-03 20:32:10,124 - src.api.web_api - INFO - 代币 HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe 没有交易记录（类型: all）
+2025-04-03 20:32:10,124 - src.api.web_api - INFO - 代币 HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe 没有回复记录
+2025-04-03 20:32:58,548 - src.api.web_api - INFO - 代币 HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe 没有交易记录（类型: all）
+2025-04-03 20:32:58,549 - src.api.web_api - INFO - 代币 HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe 没有回复记录
+2025-04-03 20:32:58,602 - src.api.web_api - ERROR - 获取代币详情失败: no results to fetch, 代币: HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe
+2025-04-03 20:32:58,610 - src.utils.error_handler - ERROR - 函数 get_token_detail 执行出错: HTTPException
+错误信息: 500: 数据库查询失败
+堆栈跟踪:
+Traceback (most recent call last):
+  File "/Users/life2you_mini/work/github/datas-go/src/api/web_api.py", line 351, in get_token_detail
+    token = cursor.fetchone()
+  File "/Users/life2you_mini/work/github/datas-go/venv/lib/python3.13/site-packages/psycopg2/extras.py", line 86, in fetchone
+    res = super().fetchone()
+psycopg2.ProgrammingError: no results to fetch
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/life2you_mini/work/github/datas-go/src/utils/error_handler.py", line 107, in wrapper
+    return func(*args, **kwargs)
+  File "/Users/life2you_mini/work/github/datas-go/src/api/web_api.py", line 361, in get_token_detail
+    raise HTTPException(status_code=500, detail="数据库查询失败")
+fastapi.exceptions.HTTPException: 500: 数据库查询失败
+

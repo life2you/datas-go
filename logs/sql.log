@@ -1,0 +1,208 @@
+2025-04-03 20:32:10,099 - src.db.database - INFO - 成功连接到数据库 pump @ localhost:5433
+2025-04-03 20:32:10,099 - src.db.database - INFO - 成功连接到数据库 pump @ localhost:5433
+2025-04-03 20:32:10,100 - src.db.database - INFO - 成功连接到数据库 pump @ localhost:5433
+2025-04-03 20:32:10,099 - src.db.database - INFO - 成功连接到数据库 pump @ localhost:5433
+2025-04-03 20:32:10,099 - src.db.database - INFO - 成功连接到数据库 pump @ localhost:5433
+2025-04-03 20:32:10,100 - src.db.database - DEBUG - 执行SQL: 
+    SELECT COUNT(*) as count FROM token_replies
+    WHERE mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:10,100 - src.db.database - INFO - 成功连接到数据库 pump @ localhost:5433
+2025-04-03 20:32:10,100 - src.db.database - DEBUG - 执行SQL: 
+    SELECT COUNT(*) as count FROM token_replies
+    WHERE mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:10,100 - src.db.database - DEBUG - 执行SQL: 
+    SELECT COUNT(*) as count FROM token_trade
+    WHERE mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:10,100 - src.db.database - DEBUG - 执行SQL: 
+    SELECT 
+        t.mint, t.name, t.symbol, t.uri, t.initial_buy,
+        t.v_tokens_in_bonding_curve, t.v_sol_in_bonding_curve,
+        t.created_at, t.trader_public_key as creator,
+        '' as creator_name,
+        (SELECT COUNT(*) FROM token_trade WHERE mint = t.mint AND tx_type = 'buy') as buy_count,
+        (SELECT COUNT(*) FROM token_trade WHERE mint = t.mint AND tx_type = 'sell') as sell_count,
+        (SELECT COUNT(*) FROM token_replies WHERE mint = t.mint) as reply_count
+    FROM token t
+    WHERE t.mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:10,100 - src.db.database - DEBUG - 执行SQL: 
+    SELECT COUNT(*) as count FROM token_trade
+    WHERE mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:10,100 - src.db.database - DEBUG - 执行SQL: 
+    SELECT 
+        t.mint, t.name, t.symbol, t.uri, t.initial_buy,
+        t.v_tokens_in_bonding_curve, t.v_sol_in_bonding_curve,
+        t.created_at, t.trader_public_key as creator,
+        '' as creator_name,
+        (SELECT COUNT(*) FROM token_trade WHERE mint = t.mint AND tx_type = 'buy') as buy_count,
+        (SELECT COUNT(*) FROM token_trade WHERE mint = t.mint AND tx_type = 'sell') as sell_count,
+        (SELECT COUNT(*) FROM token_replies WHERE mint = t.mint) as reply_count
+    FROM token t
+    WHERE t.mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:10,120 - src.db.database - DEBUG - 执行SQL: 
+    SELECT 
+        t.mint, t.name, t.symbol, t.uri, t.initial_buy,
+        t.v_tokens_in_bonding_curve, t.v_sol_in_bonding_curve,
+        t.created_at, t.trader_public_key as creator,
+        '' as creator_name,
+        (SELECT COUNT(*) FROM token_trade WHERE mint = t.mint AND tx_type = 'buy') as buy_count,
+        (SELECT COUNT(*) FROM token_trade WHERE mint = t.mint AND tx_type = 'sell') as sell_count,
+        (SELECT COUNT(*) FROM token_replies WHERE mint = t.mint) as reply_count
+    FROM token t
+    WHERE t.mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:10,120 - src.db.database - DEBUG - 执行SQL: 
+    SELECT 
+        t.mint, t.name, t.symbol, t.uri, t.initial_buy,
+        t.v_tokens_in_bonding_curve, t.v_sol_in_bonding_curve,
+        t.created_at, t.trader_public_key as creator,
+        '' as creator_name,
+        (SELECT COUNT(*) FROM token_trade WHERE mint = t.mint AND tx_type = 'buy') as buy_count,
+        (SELECT COUNT(*) FROM token_trade WHERE mint = t.mint AND tx_type = 'sell') as sell_count,
+        (SELECT COUNT(*) FROM token_replies WHERE mint = t.mint) as reply_count
+    FROM token t
+    WHERE t.mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:10,122 - src.db.database - DEBUG - 执行SQL: 
+    SELECT COUNT(*) as count FROM token_trade
+    WHERE mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:10,122 - src.db.database - DEBUG - 执行SQL: 
+    SELECT COUNT(*) as count FROM token_replies
+    WHERE mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:10,122 - src.db.database - DEBUG - 执行SQL: 
+    SELECT COUNT(*) as count FROM token_trade
+    WHERE mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:10,122 - src.db.database - DEBUG - 执行SQL: 
+    SELECT COUNT(*) as count FROM token_replies
+    WHERE mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:58,529 - src.db.database - DEBUG - 执行SQL: 
+    SELECT 
+        t.mint, t.name, t.symbol, t.uri, t.initial_buy,
+        t.v_tokens_in_bonding_curve, t.v_sol_in_bonding_curve,
+        t.created_at, t.trader_public_key as creator,
+        '' as creator_name,
+        (SELECT COUNT(*) FROM token_trade WHERE mint = t.mint AND tx_type = 'buy') as buy_count,
+        (SELECT COUNT(*) FROM token_trade WHERE mint = t.mint AND tx_type = 'sell') as sell_count,
+        (SELECT COUNT(*) FROM token_replies WHERE mint = t.mint) as reply_count
+    FROM token t
+    WHERE t.mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:58,529 - src.db.database - DEBUG - 执行SQL: 
+    SELECT 
+        t.mint, t.name, t.symbol, t.uri, t.initial_buy,
+        t.v_tokens_in_bonding_curve, t.v_sol_in_bonding_curve,
+        t.created_at, t.trader_public_key as creator,
+        '' as creator_name,
+        (SELECT COUNT(*) FROM token_trade WHERE mint = t.mint AND tx_type = 'buy') as buy_count,
+        (SELECT COUNT(*) FROM token_trade WHERE mint = t.mint AND tx_type = 'sell') as sell_count,
+        (SELECT COUNT(*) FROM token_replies WHERE mint = t.mint) as reply_count
+    FROM token t
+    WHERE t.mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:58,536 - src.db.database - DEBUG - 执行SQL: 
+    SELECT COUNT(*) as count FROM token_trade
+    WHERE mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:58,537 - src.db.database - DEBUG - 执行SQL: 
+    SELECT COUNT(*) as count FROM token_replies
+    WHERE mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:58,536 - src.db.database - DEBUG - 执行SQL: 
+    SELECT COUNT(*) as count FROM token_trade
+    WHERE mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:58,537 - src.db.database - DEBUG - 执行SQL: 
+    SELECT COUNT(*) as count FROM token_replies
+    WHERE mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:58,595 - src.db.database - DEBUG - 执行SQL: 
+    SELECT 
+        t.mint, t.name, t.symbol, t.uri, t.initial_buy,
+        t.v_tokens_in_bonding_curve, t.v_sol_in_bonding_curve,
+        t.created_at, t.trader_public_key as creator,
+        '' as creator_name,
+        (SELECT COUNT(*) FROM token_trade WHERE mint = t.mint AND tx_type = 'buy') as buy_count,
+        (SELECT COUNT(*) FROM token_trade WHERE mint = t.mint AND tx_type = 'sell') as sell_count,
+        (SELECT COUNT(*) FROM token_replies WHERE mint = t.mint) as reply_count
+    FROM token t
+    WHERE t.mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:58,595 - src.db.database - DEBUG - 执行SQL: 
+    SELECT 
+        t.mint, t.name, t.symbol, t.uri, t.initial_buy,
+        t.v_tokens_in_bonding_curve, t.v_sol_in_bonding_curve,
+        t.created_at, t.trader_public_key as creator,
+        '' as creator_name,
+        (SELECT COUNT(*) FROM token_trade WHERE mint = t.mint AND tx_type = 'buy') as buy_count,
+        (SELECT COUNT(*) FROM token_trade WHERE mint = t.mint AND tx_type = 'sell') as sell_count,
+        (SELECT COUNT(*) FROM token_replies WHERE mint = t.mint) as reply_count
+    FROM token t
+    WHERE t.mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:58,598 - src.db.database - DEBUG - 执行SQL: 
+    SELECT COUNT(*) as count FROM token_trade
+    WHERE mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:58,598 - src.db.database - DEBUG - 执行SQL: 
+    SELECT COUNT(*) as count FROM token_trade
+    WHERE mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:58,598 - src.db.database - DEBUG - 执行SQL: 
+    SELECT COUNT(*) as count FROM token_replies
+    WHERE mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:58,598 - src.db.database - DEBUG - 执行SQL: 
+    SELECT COUNT(*) as count FROM token_replies
+    WHERE mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    
+2025-04-03 20:32:58,602 - src.db.database - DEBUG - 执行SQL: 
+    SELECT 
+        id, mint, tx_type, trader_public_key as user_address, 
+        '' as username, -- 临时添加空用户名
+        EXTRACT(EPOCH FROM trade_time)::bigint * 1000 as timestamp, 
+        trade_time as datetime, 
+        sol_amount, token_amount, signature as tx_signature
+    FROM token_trade
+    WHERE mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    ORDER BY trade_time DESC
+    LIMIT 10 OFFSET 0
+    
+2025-04-03 20:32:58,602 - src.db.database - DEBUG - 执行SQL: 
+    SELECT 
+        id, mint, tx_type, trader_public_key as user_address, 
+        '' as username, -- 临时添加空用户名
+        EXTRACT(EPOCH FROM trade_time)::bigint * 1000 as timestamp, 
+        trade_time as datetime, 
+        sol_amount, token_amount, signature as tx_signature
+    FROM token_trade
+    WHERE mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    ORDER BY trade_time DESC
+    LIMIT 10 OFFSET 0
+    
+2025-04-03 20:32:58,602 - src.db.database - DEBUG - 执行SQL: 
+    SELECT 
+        id, mint, is_buy, sol_amount, user_address,
+        username, timestamp, datetime, text, total_likes
+    FROM token_replies
+    WHERE mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    ORDER BY timestamp DESC
+    LIMIT 10 OFFSET 0
+    
+2025-04-03 20:32:58,602 - src.db.database - DEBUG - 执行SQL: 
+    SELECT 
+        id, mint, is_buy, sol_amount, user_address,
+        username, timestamp, datetime, text, total_likes
+    FROM token_replies
+    WHERE mint = 'HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe'
+    ORDER BY timestamp DESC
+    LIMIT 10 OFFSET 0
+    
