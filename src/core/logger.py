@@ -11,7 +11,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import sys
 
-from src.config.config import (
+from src.core.config import (
     LOG_LEVEL, LOG_FORMAT, LOG_DIR, LOG_FILE, LOG_ERROR_FILE, LOG_SQL_FILE,
     LOG_MAX_BYTES, LOG_BACKUP_COUNT, LOG_TO_FILE, SQL_LOG_ENABLED, SQL_LOG_LEVEL
 )

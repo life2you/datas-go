@@ -11,9 +11,9 @@ import logging
 import time
 from datetime import datetime
 
-from src.api.pump_data_processor import PumpDataProcessor, ensure_token_replies_table
-from src.config.config import TOKEN_REPLIES_CONFIG
-from src.utils.logger import get_logger
+from src.core.processors.pump_data_processor import PumpDataProcessor, ensure_token_replies_table
+from src.core.config import TOKEN_REPLIES_CONFIG
+from src.core.logger import get_logger
 
 logger = get_logger(__name__)
 

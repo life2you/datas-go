@@ -69,16 +69,20 @@ WATCH_TOKENS = parse_list(os.getenv('WATCH_TOKENS', ''))
 HTTP_PROXY = os.getenv("HTTP_PROXY", "")
 HTTPS_PROXY = os.getenv("HTTPS_PROXY", "")
 PROXY_ENABLED = str_to_bool(os.getenv("PROXY_ENABLED", "false"))
+PROXY_USERNAME = os.getenv("PROXY_USERNAME", "")
+PROXY_PASSWORD = os.getenv("PROXY_PASSWORD", "")
 
 # HTTP客户端配置
 HTTP_CONFIG = {
     "timeout": int(os.getenv("HTTP_TIMEOUT", "30")),
     "verify_ssl": str_to_bool(os.getenv("HTTP_VERIFY_SSL", "true")),
-    "proxies": {
-        "http": HTTP_PROXY,
-        "https": HTTPS_PROXY
-    } if HTTP_PROXY or HTTPS_PROXY else None,
-    "proxy_enabled": PROXY_ENABLED
+    "proxy": HTTP_PROXY or HTTPS_PROXY,  # 使用HTTP或HTTPS代理
+    "proxy_username": PROXY_USERNAME,
+    "proxy_password": PROXY_PASSWORD,
+    "proxy_enabled": PROXY_ENABLED,
+    "headers": {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
 }
 
 # API服务器配置
@@ -116,4 +120,9 @@ ERROR_EMAIL_CONFIG = {
     "from": os.getenv("ERROR_EMAIL_FROM", ""),
     "to": parse_list(os.getenv("ERROR_EMAIL_TO", "")),
     "subject_prefix": os.getenv("ERROR_EMAIL_SUBJECT_PREFIX", "[PUMP-ERROR]")
+}
+
+# Moralis API配置
+MORALIS_CONFIG = {
+    "api_key": os.getenv("MORALIS_API_KEY", ""),
 } 

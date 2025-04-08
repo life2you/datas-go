@@ -22,7 +22,8 @@ class HttpClient:
     
     def __init__(self, 
                  base_url: str = "",
-                 proxies: Dict[str, str] = None,
+                 proxy: str = None,
+                 proxy_auth: Any = None,
                  proxy_enabled: bool = False,
                  timeout: int = 30,
                  verify_ssl: bool = True,
@@ -32,14 +33,16 @@ class HttpClient:
         
         参数:
             base_url: 基础URL，所有请求都将基于此URL
-            proxies: 代理配置，格式为 {"http": "http://proxy:port", "https": "https://proxy:port"}
+            proxy: 代理URL，格式为 "http://proxy:port" 或 "https://proxy:port"
+            proxy_auth: 代理认证信息
             proxy_enabled: 是否启用代理
             timeout: 请求超时时间（秒）
             verify_ssl: 是否验证SSL证书
             headers: 默认请求头
         """
         self.base_url = base_url
-        self.proxies = proxies or {}
+        self.proxy = proxy
+        self.proxy_auth = proxy_auth
         self.proxy_enabled = proxy_enabled
         self.timeout = timeout
         self.verify_ssl = verify_ssl
@@ -56,25 +59,22 @@ class HttpClient:
         self.proxy_enabled = False
         logger.info("已禁用HTTP代理")
     
-    def set_proxy(self, proxy_url: str, proxy_type: str = "both") -> None:
+    def set_proxy(self, proxy_url: str, proxy_auth: Any = None) -> None:
         """
         设置代理
         
         参数:
-            proxy_url: 代理服务器URL，格式为 "http://user:pass@proxy:port"
-            proxy_type: 代理类型，可以是 "http", "https" 或 "both"
+            proxy_url: 代理服务器URL
+            proxy_auth: 代理认证信息
         """
-        if proxy_type == "both" or proxy_type == "http":
-            self.proxies["http"] = proxy_url
-        
-        if proxy_type == "both" or proxy_type == "https":
-            self.proxies["https"] = proxy_url
-        
-        logger.info(f"已设置代理: {self.proxies}")
+        self.proxy = proxy_url
+        self.proxy_auth = proxy_auth
+        logger.info(f"已设置代理: {self.proxy}")
     
     def clear_proxy(self) -> None:
         """清除所有代理设置"""
-        self.proxies = {}
+        self.proxy = None
+        self.proxy_auth = None
         logger.info("已清除所有代理设置")
     
     def set_header(self, key: str, value: str) -> None:
@@ -123,7 +123,12 @@ class HttpClient:
             request_headers.update(headers)
         
         # 设置代理
-        request_proxies = self.proxies if self.proxy_enabled else None
+        request_proxies = None
+        if self.proxy_enabled and self.proxy:
+            request_proxies = {
+                "http": self.proxy,
+                "https": self.proxy
+            }
         
         request_params = {
             "url": url,
@@ -171,7 +176,7 @@ class HttpClient:
         try:
             logger.debug(f"发送{method}请求: {url}")
             if self.proxy_enabled:
-                logger.debug(f"使用代理: {self.proxies}")
+                logger.debug(f"使用代理: {self.proxy}")
             
             response = self.session.request(method, **request_params)
             response.raise_for_status()  # 抛出HTTP错误

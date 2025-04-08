@@ -10,9 +10,10 @@ import logging
 import json
 from typing import Dict, List, Any, Optional, Union
 from datetime import datetime
+import aiohttp
 
-from src.utils.http_client import HttpClient
-from src.config.config import HTTP_CONFIG
+from src.client.http_client import HttpClient
+from src.core.config import HTTP_CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -44,10 +45,22 @@ class PumpApiClient:
         """
         self.cookie = cookie
         
+        # 配置代理
+        proxy = None
+        proxy_auth = None
+        if use_proxy and HTTP_CONFIG["proxy_enabled"]:
+            proxy = HTTP_CONFIG["proxy"]
+            if HTTP_CONFIG["proxy_username"] and HTTP_CONFIG["proxy_password"]:
+                proxy_auth = aiohttp.BasicAuth(
+                    HTTP_CONFIG["proxy_username"],
+                    HTTP_CONFIG["proxy_password"]
+                )
+        
         # 创建HTTP客户端
         self.http_client = HttpClient(
             base_url=self.BASE_URL,
-            proxies=HTTP_CONFIG["proxies"],
+            proxy=proxy,
+            proxy_auth=proxy_auth,
             proxy_enabled=use_proxy and HTTP_CONFIG["proxy_enabled"],
             timeout=HTTP_CONFIG["timeout"],
             verify_ssl=HTTP_CONFIG["verify_ssl"],

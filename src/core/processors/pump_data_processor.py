@@ -11,7 +11,7 @@ import time
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 
-from src.api.pump_api import PumpApiClient
+from src.client.pump_api import PumpApiClient
 from src.db.database import db
 
 logger = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ class PumpDataProcessor:
             dt = datetime.fromtimestamp(timestamp / 1000.0)
             return dt.strftime('%Y-%m-%d %H:%M:%S')
         except Exception as e:
-            logger.error(f"时间戳转换失败: {str(e)}")
+            logger.error(f"时间戳转换失败: {str(e)}", exc_info=True)
             return None
     
     def process_reply(self, reply: Dict[str, Any]) -> Dict[str, Any]:
@@ -82,66 +82,111 @@ class PumpDataProcessor:
         }
         return processed_data
     
-    def save_replies_to_db(self, replies: List[Dict[str, Any]]) -> int:
+    def save_replies_to_db(self, replies, mint):
         """
-        将处理后的回复数据保存到数据库
+        将回复数据保存到数据库
         
         参数:
-            replies: 处理后的回复数据列表
+            replies: 回复数据列表
+            mint: 代币的mint地址
             
         返回:
-            成功保存的记录数量
+            int: 成功保存的记录数量
         """
-        if not replies:
+        if not replies or not mint:
+            logger.warning(f"保存回复数据失败: 参数为空，replies: {len(replies) if replies else 0}，mint: {mint}")
             return 0
             
-        # 构建SQL插入语句
-        query = """
-        INSERT INTO token_replies (
-            mint, is_buy, sol_amount, user_address, timestamp, datetime, 
-            text, username, total_likes
-        ) VALUES (
-            %(mint)s, %(is_buy)s, %(sol_amount)s, %(user)s, %(timestamp)s, %(datetime)s,
-            %(text)s, %(username)s, %(total_likes)s
-        )
-        ON CONFLICT (mint, user_address, timestamp) DO NOTHING
-        RETURNING id;
-        """
-        
-        # 批量插入
-        saved_count = 0
-        for reply in replies:
-            try:
-                cursor = db.execute(query, reply)
-                if cursor and cursor.rowcount > 0:
-                    saved_count += 1
-            except Exception as e:
-                logger.error(f"保存回复数据失败: {str(e)}")
-        
-        logger.info(f"成功保存 {saved_count} 条回复数据")
-        return saved_count
+        try:
+            # 构建插入SQL
+            query = """
+            INSERT INTO token_replies (
+                mint, is_buy, sol_amount, user_address, timestamp, 
+                datetime, text, username, total_likes
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (mint, user_address, timestamp) DO NOTHING
+            """
+            
+            saved_count = 0
+            batch_size = 100
+            total_count = len(replies)
+            
+            # 批量插入处理
+            for i in range(0, total_count, batch_size):
+                batch = replies[i:i+batch_size]
+                params_list = []
+                
+                for reply in batch:
+                    # 检查每条记录字段是否完整
+                    if not reply.get('address') or not reply.get('timestamp'):
+                        continue
+                        
+                    # 转换时间戳为datetime
+                    dt = self.timestamp_to_datetime(reply.get('timestamp'))
+                    
+                    params = (
+                        mint,
+                        reply.get('is_buy'),
+                        reply.get('sol_amount'),
+                        reply.get('address'),
+                        reply.get('timestamp'),
+                        dt,
+                        reply.get('text'),
+                        reply.get('username'),
+                        reply.get('total_likes', 0)
+                    )
+                    params_list.append(params)
+                
+                if params_list:
+                    result = self.db.executemany(query, params_list)
+                    if result:
+                        saved_count += len(params_list)
+                    else:
+                        logger.error(f"批量插入回复数据失败，batch: {i//batch_size + 1}/{(total_count+batch_size-1)//batch_size}", exc_info=True)
+                
+            logger.info(f"成功保存 {saved_count}/{total_count} 条回复数据到token_replies表")
+            return saved_count
+        except Exception as e:
+            logger.error(f"保存回复数据失败: {str(e)}", exc_info=True)
+            return 0
     
-    def get_token_reply_count(self, mint: str) -> int:
+    def get_token_reply_count(self, mint):
         """
-        获取数据库中指定token的回复数量
+        获取指定mint的回复数量
         
         参数:
-            mint: token的mint地址
+            mint: 代币的mint地址
             
         返回:
-            回复数量
+            int: 回复数量
         """
-        query = "SELECT COUNT(*) as count FROM token_replies WHERE mint = %s"
-        
+        if not mint:
+            logger.error("获取回复数量失败: mint参数为空", exc_info=True)
+            return 0
+            
         try:
+            # 查询回复数量
+            query = """
+            SELECT COUNT(*) as count FROM token_replies WHERE mint = %s
+            """
             cursor = db.execute(query, (mint,))
-            if cursor:
-                result = cursor.fetchone()
-                return result['count'] if result else 0
+            if not cursor:
+                logger.error(f"查询token回复数量失败: 执行SQL失败", exc_info=True)
+                return 0
+                
+            result = cursor.fetchone()
+            if not result:
+                return 0
+                
+            count = result.get('count', 0)
+            if count is None:
+                logger.error(f"查询token回复数量失败: 结果中没有count字段", exc_info=True)
+                count = 0
+                
+            return count
         except Exception as e:
-            logger.error(f"查询token回复数量失败: {str(e)}")
-        
-        return 0
+            logger.error(f"查询token回复数量失败: {str(e)}", exc_info=True)
+            return 0
     
     def get_tokens_with_sol_gt(self, sol_amount: float = 35.0) -> List[Dict[str, Any]]:
         """
@@ -165,7 +210,7 @@ class PumpDataProcessor:
             if cursor:
                 return cursor.fetchall()
         except Exception as e:
-            logger.error(f"查询高价值token失败: {str(e)}")
+            logger.error(f"查询高价值token失败: {str(e)}", exc_info=True)
         
         return []
     
@@ -227,7 +272,7 @@ class PumpDataProcessor:
                 time.sleep(1)
                 
             except Exception as e:
-                logger.error(f"获取token回复失败: {str(e)}")
+                logger.error(f"获取token回复失败: {str(e)}", exc_info=True)
                 break
         
         return all_replies
@@ -265,7 +310,7 @@ class PumpDataProcessor:
             
             # 如果获取到回复，保存到数据库
             if replies:
-                saved_count = self.save_replies_to_db(replies)
+                saved_count = self.save_replies_to_db(replies, mint)
                 logger.info(f"为token {name} ({mint}) 保存了 {saved_count} 条新回复")
             else:
                 logger.info(f"没有新的回复数据需要保存，或者API返回为空")
@@ -303,7 +348,7 @@ def ensure_token_replies_table():
         logger.info("已确保token_replies表存在")
         return True
     except Exception as e:
-        logger.error(f"创建token_replies表失败: {str(e)}")
+        logger.error(f"创建token_replies表失败: {str(e)}", exc_info=True)
         return False
 
 
@@ -311,7 +356,7 @@ def main():
     """主函数，处理高价值token的回复数据"""
     # 确保表存在
     if not ensure_token_replies_table():
-        logger.error("无法创建必要的数据库表，程序退出")
+        logger.error("无法创建必要的数据库表，程序退出", exc_info=True)
         return 1
     
     # 创建数据处理器

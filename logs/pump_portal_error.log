@@ -1,20 +1,3 @@
-2025-04-03 20:32:58,602 - src.api.web_api - ERROR - 获取代币详情失败: no results to fetch, 代币: HHvQjaTmkgA5uybWfpnLFLzpcUdjPoX26UEnfnZB6YVe
-2025-04-03 20:32:58,610 - src.utils.error_handler - ERROR - 函数 get_token_detail 执行出错: HTTPException
-错误信息: 500: 数据库查询失败
-堆栈跟踪:
-Traceback (most recent call last):
-  File "/Users/life2you_mini/work/github/datas-go/src/api/web_api.py", line 351, in get_token_detail
-    token = cursor.fetchone()
-  File "/Users/life2you_mini/work/github/datas-go/venv/lib/python3.13/site-packages/psycopg2/extras.py", line 86, in fetchone
-    res = super().fetchone()
-psycopg2.ProgrammingError: no results to fetch
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/Users/life2you_mini/work/github/datas-go/src/utils/error_handler.py", line 107, in wrapper
-    return func(*args, **kwargs)
-  File "/Users/life2you_mini/work/github/datas-go/src/api/web_api.py", line 361, in get_token_detail
-    raise HTTPException(status_code=500, detail="数据库查询失败")
-fastapi.exceptions.HTTPException: 500: 数据库查询失败
-
+2025-04-07 19:53:20,459 - PumpPortalClient - ERROR - 发送失败: Object of type set is not JSON serializable
+2025-04-07 19:55:10,590 - PumpPortalClient - ERROR - 发送失败: Object of type set is not JSON serializable
+2025-04-07 20:09:16,215 - PumpPortalClient - ERROR - 发送失败: Object of type set is not JSON serializable

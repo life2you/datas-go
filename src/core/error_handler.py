@@ -16,8 +16,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 
-from src.utils.logger import get_logger
-from src.config.config import LOG_ERROR_FILE, LOG_DIR, ERROR_EMAIL_CONFIG
+from src.core.logger import get_logger
+from src.core.config import LOG_ERROR_FILE, LOG_DIR, ERROR_EMAIL_CONFIG
 
 # 获取日志记录器
 logger = get_logger(__name__)

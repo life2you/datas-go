@@ -12,9 +12,8 @@ import websockets
 import logging
 from typing import List, Dict, Any, Optional
 
-from src.config.config import WEBSOCKET_URI, LOG_LEVEL, LOG_FORMAT
+from src.core.config import WEBSOCKET_URI, LOG_LEVEL, LOG_FORMAT
 from src.db.database import db
-from src.models.token_event import TokenEvent
 
 # 配置日志
 logging.basicConfig(
@@ -45,8 +44,6 @@ class PumpPortalClient:
             "account_trade": [],
             "token_trade": []
         }
-        self.batch_size = 50  # 批量插入的大小
-        self.event_buffer = []  # 事件缓冲区
         
         # 监控的代币和账户列表
         self.watching_tokens = set()  # 使用集合避免重复
@@ -249,10 +246,16 @@ class PumpPortalClient:
         if tx_type == 'create':
             # 新代币创建事件
             try:
-                # 添加到缓冲区并在缓冲区满时批量处理
-                self.event_buffer.append(message)
-                if len(self.event_buffer) >= self.batch_size:
-                    await self._flush_event_buffer()
+                # # 直接插入数据库，不使用缓冲
+                # if self._should_store_event(message):
+                #     try:
+                #         token_id = db.insert_token_event(message)
+                #         if token_id:
+                #             logger.info(f"成功插入代币事件，ID: {token_id}, Signature: {message.get('signature')}")
+                #         else:
+                #             logger.warning(f"插入代币事件失败，Signature: {message.get('signature')}")
+                #     except Exception as e:
+                #         logger.error(f"插入代币事件到数据库失败: {str(e)}")
                 
                 # 触发回调函数
                 for callback in self.callbacks["new_token"]:
@@ -305,22 +308,6 @@ class PumpPortalClient:
         # 包含signature和mint字段的消息会被存储
         return 'signature' in message and 'mint' in message
     
-    async def _flush_event_buffer(self) -> None:
-        """
-        将缓冲区中的事件批量写入数据库
-        """
-        if not self.event_buffer:
-            return
-        
-        try:
-            count = db.insert_many_token_events(self.event_buffer)
-            logger.info(f"成功批量插入 {count} 条事件记录")
-        except Exception as e:
-            logger.error(f"批量插入事件记录失败: {str(e)}")
-        
-        # 清空缓冲区
-        self.event_buffer = []
-    
     async def listen(self) -> None:
         """
         开始监听消息
@@ -343,9 +330,6 @@ class PumpPortalClient:
                     logger.error(f"接收消息错误: {str(e)}")
                     await asyncio.sleep(1)  # 防止错误消息导致CPU占用过高
         finally:
-            # 确保所有缓冲数据都写入数据库
-            await self._flush_event_buffer()
-            
             # 关闭连接
             await self.disconnect()
     
@@ -361,7 +345,7 @@ class PumpPortalClient:
                 await self.load_tokens_from_database()
                 
                 # 订阅事件
-                from src.config.config import LISTEN_NEW_TOKEN, LISTEN_MIGRATION, WATCH_ACCOUNTS, WATCH_TOKENS
+                from src.core.config import LISTEN_NEW_TOKEN, LISTEN_MIGRATION, WATCH_ACCOUNTS, WATCH_TOKENS
                 
                 if LISTEN_NEW_TOKEN:
                     await self.subscribe_new_token()
@@ -487,15 +471,13 @@ class PumpPortalClient:
                 # 将代币添加到监控列表
                 for token in batch:
                     self.watching_tokens.add(token)
-                
-                # 如果已经连接，立即订阅
-                if self.websocket and self.running:
-                    try:
-                        await self.subscribe_token_trade(batch)
-                        logger.info(f"已添加一批 {len(batch)} 个代币到监控列表并订阅交易")
-                    except Exception as e:
-                        logger.error(f"订阅代币批次失败: {str(e)}")
-            
-            logger.info(f"成功从数据库加载了 {len(token_addresses)} 个代币到监控列表")
+            # 如果已经连接，立即订阅
+            if self.websocket and self.running:
+                try:
+                    await self.subscribe_token_trade(self.watching_tokens)
+                    logger.info(f"已添加一批 {len(self.watching_tokens)} 个代币到监控列表并订阅交易")
+                except Exception as e:
+                    logger.error(f"订阅代币批次失败: {str(e)}")
+            logger.info(f"成功从数据库加载了 {len(self.watching_tokens)} 个代币到监控列表")
         except Exception as e:
             logger.error(f"从数据库加载代币失败: {str(e)}") 
