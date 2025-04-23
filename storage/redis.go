@@ -88,15 +88,7 @@ func (r *RedisClient) Close() error {
 //
 // 返回:
 //   - error: 错误信息
-func (r *RedisClient) StoreBlock(ctx context.Context, slot uint64, block *rpc.GetBlockResult) error {
-	// 将区块数据序列化为JSON
-	blockJSON, err := json.Marshal(block)
-	if err != nil {
-		return fmt.Errorf("序列化区块数据失败: %w", err)
-	}
-
-	// 区块详情的Hash键
-	blockKey := fmt.Sprintf("%s%d", BlockHashPrefix, slot)
+func (r *RedisClient) StoreBlock(ctx context.Context, slot uint64) error {
 
 	// 使用管道执行多个命令以提高性能
 	pipe := r.client.Pipeline()
@@ -106,16 +98,11 @@ func (r *RedisClient) StoreBlock(ctx context.Context, slot uint64, block *rpc.Ge
 		Score:  float64(slot),
 		Member: slot,
 	})
-
-	// 2. 将区块详情存储到Hash
-	pipe.Set(ctx, blockKey, blockJSON, BlockExpiration)
-
 	// 执行管道命令
-	_, err = pipe.Exec(ctx)
+	_, err := pipe.Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("存储区块数据失败: %w", err)
 	}
-
 	return nil
 }
 
@@ -148,38 +135,37 @@ func (r *RedisClient) GetBlockBySlot(ctx context.Context, slot uint64) (*rpc.Get
 	return &block, nil
 }
 
-// GetMinBlock 获取最小高度的区块
+// GetMinBlock 获取最小高度的区块 并移除
 // 参数:
 //   - ctx: 上下文
 //
 // 返回:
 //   - uint64: 区块高度
-//   - *rpc.GetBlockResult: 区块数据
 //   - error: 错误信息
-func (r *RedisClient) GetMinBlock(ctx context.Context) (uint64, *rpc.GetBlockResult, error) {
+func (r *RedisClient) GetMinBlock(ctx context.Context) (uint64, error) {
 	// 使用ZRANGE获取最小score的元素(即最小区块高度)
 	slots, err := r.client.ZRange(ctx, BlocksZSetKey, 0, 0).Result()
 	if err != nil {
-		return 0, nil, fmt.Errorf("获取最小区块高度失败: %w", err)
+		return 0, fmt.Errorf("获取最小区块高度失败: %w", err)
 	}
 
 	if len(slots) == 0 {
-		return 0, nil, ErrNoBlocksAvailable
+		return 0, ErrNoBlocksAvailable
 	}
 
 	// 解析区块高度
 	var slot uint64
 	if _, err := fmt.Sscanf(slots[0], "%d", &slot); err != nil {
-		return 0, nil, fmt.Errorf("解析区块高度失败: %w", err)
+		return 0, fmt.Errorf("解析区块高度失败: %w", err)
 	}
 
-	// 获取该区块的详细信息
-	block, err := r.GetBlockBySlot(ctx, slot)
+	// 从有序集合中移除该区块
+	_, err = r.client.ZRem(ctx, BlocksZSetKey, slot).Result()
 	if err != nil {
-		return slot, nil, err
+		return 0, fmt.Errorf("移除最小区块失败: %w", err)
 	}
 
-	return slot, block, nil
+	return slot, nil
 }
 
 // GetMaxBlock 获取最大高度的区块

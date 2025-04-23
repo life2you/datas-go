@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/life2you/datas-go/logger"
+	"github.com/life2you/datas-go/storage"
 	"go.uber.org/zap"
 )
 
@@ -22,4 +24,6 @@ func HeliusSlotHandler(result json.RawMessage) {
 	}
 
 	logger.Info("收到新槽位通知", zap.Uint64("slot", slotInfo.Slot))
+
+	storage.GlobalRedisClient.StoreBlock(context.Background(), slotInfo.Slot)
 }
