@@ -45,11 +45,12 @@ func main() {
 		logger.Fatal("WebSocket客户端初始化失败")
 	}
 	logger.Info("WebSocket客户端初始化成功")
-	// 启动服务前添加检查
-	if configs.GlobalConfig.WebSocket.Enabled {
-		// 启动服务
-		service.StartHeliusService()
-	}
+
+	// 7. 启动服务，不需要阻塞
+	go service.StartHeliusService()
+
+	// 8. 在主协程中打印状态信息
+	logger.Info("程序已启动，正在等待区块数据...")
 
 	// 9. 阻止程序退出
 	// 添加信号处理代码
@@ -67,4 +68,6 @@ func main() {
 		}
 		os.Exit(0)
 	}()
+
+	select {}
 }

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -21,7 +22,7 @@ type WebSocketClient struct {
 	conn              *websocket.Conn
 	url               string
 	apiKey            string
-	subscriptions     map[int]SubscriptionHandler
+	subscriptions     map[string]SubscriptionHandler
 	subscriptionMutex sync.Mutex
 	nextID            int
 	done              chan struct{}
@@ -62,7 +63,7 @@ func NewWebSocketClientOptions(config *configs.WebSocketConfig) {
 	client := &WebSocketClient{
 		url:               endpoint,
 		apiKey:            config.APIKey,
-		subscriptions:     make(map[int]SubscriptionHandler),
+		subscriptions:     make(map[string]SubscriptionHandler),
 		nextID:            1,
 		done:              make(chan struct{}),
 		reconnect:         true,
@@ -187,7 +188,7 @@ func (c *WebSocketClient) readLoop() {
 			}
 
 			// 处理订阅通知
-			if response.Method == "subscription" {
+			if response.Method != "" {
 				var notification struct {
 					Subscription int             `json:"subscription"`
 					Result       json.RawMessage `json:"result"`
@@ -198,7 +199,7 @@ func (c *WebSocketClient) readLoop() {
 				}
 
 				c.subscriptionMutex.Lock()
-				handler, exists := c.subscriptions[notification.Subscription]
+				handler, exists := c.subscriptions[response.Method]
 				c.subscriptionMutex.Unlock()
 
 				if exists {
@@ -337,14 +338,13 @@ func (c *WebSocketClient) subscribe(method string, params []interface{}, handler
 	// 注意：这里我们暂时使用请求ID作为订阅ID的占位符
 	// 实际上，服务器返回的订阅ID可能不同，需要在响应中更新
 	c.subscriptionMutex.Lock()
-	c.subscriptions[requestID] = handler
+	c.subscriptions["slotNotification"] = handler
 	c.subscriptionMutex.Unlock()
-
 	return requestID, nil
 }
 
 // unsubscribe 取消指定的订阅
-func (c *WebSocketClient) unsubscribe(method string, subscriptionID int) error {
+func (c *WebSocketClient) unsubscribe(method string, subscriptionName string) error {
 	c.mutex.Lock()
 	if c.conn == nil {
 		c.mutex.Unlock()
@@ -362,7 +362,7 @@ func (c *WebSocketClient) unsubscribe(method string, subscriptionID int) error {
 		JSONRPC: "2.0",
 		ID:      requestID,
 		Method:  method,
-		Params:  []interface{}{subscriptionID},
+		Params:  []interface{}{subscriptionName},
 	}
 
 	// 发送取消订阅请求
@@ -375,7 +375,7 @@ func (c *WebSocketClient) unsubscribe(method string, subscriptionID int) error {
 
 	// 从订阅映射中移除
 	c.subscriptionMutex.Lock()
-	delete(c.subscriptions, subscriptionID)
+	delete(c.subscriptions, subscriptionName)
 	c.subscriptionMutex.Unlock()
 
 	return nil
@@ -394,7 +394,7 @@ func (c *WebSocketClient) ProgramSubscribe(programID string, encoding string, ha
 
 // ProgramUnsubscribe 取消程序账户订阅
 func (c *WebSocketClient) ProgramUnsubscribe(subscriptionID int) error {
-	return c.unsubscribe("programUnsubscribe", subscriptionID)
+	return c.unsubscribe("programUnsubscribe", "")
 }
 
 // SignatureSubscribe 订阅交易签名状态
@@ -411,7 +411,7 @@ func (c *WebSocketClient) SignatureSubscribe(signature string, commitment string
 
 // SignatureUnsubscribe 取消交易签名订阅
 func (c *WebSocketClient) SignatureUnsubscribe(subscriptionID int) error {
-	return c.unsubscribe("signatureUnsubscribe", subscriptionID)
+	return c.unsubscribe("signatureUnsubscribe", "")
 }
 
 // AccountSubscribe 订阅账户变更
@@ -428,7 +428,7 @@ func (c *WebSocketClient) AccountSubscribe(accountPubkey string, encoding string
 
 // AccountUnsubscribe 取消账户订阅
 func (c *WebSocketClient) AccountUnsubscribe(subscriptionID int) error {
-	return c.unsubscribe("accountUnsubscribe", subscriptionID)
+	return c.unsubscribe("accountUnsubscribe", "")
 }
 
 // SlotSubscribe 订阅插槽更新
@@ -438,7 +438,7 @@ func (c *WebSocketClient) SlotSubscribe(handler SubscriptionHandler) (int, error
 
 // SlotUnsubscribe 取消插槽订阅
 func (c *WebSocketClient) SlotUnsubscribe(subscriptionID int) error {
-	return c.unsubscribe("slotUnsubscribe", subscriptionID)
+	return c.unsubscribe("slotUnsubscribe", "slotNotification")
 }
 
 // LogsSubscribe 订阅日志
@@ -454,37 +454,33 @@ func (c *WebSocketClient) LogsSubscribe(filter interface{}, commitment string, h
 
 // LogsUnsubscribe 取消日志订阅
 func (c *WebSocketClient) LogsUnsubscribe(subscriptionID int) error {
-	return c.unsubscribe("logsUnsubscribe", subscriptionID)
+	return c.unsubscribe("logsUnsubscribe", "")
 }
 
 // BlockSubscribe 订阅区块更新
 // 参数:
-//   - commitment: 提交级别（可选），如：finalized, confirmed
+//   - filter: 过滤器类型，只能是 "all" 或 "mentionsAccountOrProgram"
 //   - handler: 处理区块更新的回调函数
 //
 // 返回:
 //   - int: 订阅ID
 //   - error: 错误信息
-func (c *WebSocketClient) BlockSubscribe(commitment string, handler SubscriptionHandler) (int, error) {
-	// 如果提供了commitment参数，则添加到配置中
-	var params []interface{}
-	if commitment != "" {
-		params = []interface{}{
-			map[string]string{
-				"commitment": commitment,
-			},
-		}
-	} else {
-		params = []interface{}{}
+func (c *WebSocketClient) BlockSubscribe(filter string, handler SubscriptionHandler) (int, error) {
+	// 验证filter参数
+	if filter != "all" && !strings.HasPrefix(filter, "mentionsAccountOrProgram") {
+		log.Printf("警告: 区块订阅过滤器 '%s' 可能不被支持，有效值为 'all' 或 'mentionsAccountOrProgram'", filter)
 	}
 
-	log.Printf("开始订阅区块更新，commitment: %s", commitment)
+	// 构建参数
+	params := []interface{}{filter}
+
+	log.Printf("开始订阅区块更新，过滤器: %s", filter)
 	return c.subscribe("blockSubscribe", params, handler)
 }
 
 // BlockUnsubscribe 取消区块订阅
 func (c *WebSocketClient) BlockUnsubscribe(subscriptionID int) error {
-	return c.unsubscribe("blockUnsubscribe", subscriptionID)
+	return c.unsubscribe("blockUnsubscribe", "")
 }
 
 // RootSubscribe 订阅根节点更新
@@ -494,5 +490,5 @@ func (c *WebSocketClient) RootSubscribe(handler SubscriptionHandler) (int, error
 
 // RootUnsubscribe 取消根节点订阅
 func (c *WebSocketClient) RootUnsubscribe(subscriptionID int) error {
-	return c.unsubscribe("rootUnsubscribe", subscriptionID)
+	return c.unsubscribe("rootUnsubscribe", "")
 }
