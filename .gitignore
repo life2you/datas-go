@@ -1,64 +1,57 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
+# Go编译产物
+*.exe
+*.exe~
+*.dll
 *.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+*.dylib
+*.test
+*.out
 
-# 虚拟环境
-venv/
-ENV/
-env/
+# 依赖目录
+/vendor/
 
-# 日志
-logs/
+# 日志文件
+/logs/
 *.log
 
-# 数据库文件
-*.sqlite
-*.db
-*.sqlite3
+# 数据文件
+/data/
+*.dat
 
-# 环境变量文件
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# 配置文件
+/config.yaml
+/config.yml
+/config.json
+/config.toml
+/.env
 
-# IDE相关
+# 编辑器和IDE文件
 .idea/
 .vscode/
 *.swp
 *.swo
+*~
+
+# 操作系统文件
 .DS_Store
-
-# 项目特定忽略
-__pycache__/
-.pytest_cache/
-.coverage
-htmlcov/
-
-# 缓存文件
-.cache/
-.pytest_cache/
+Thumbs.db
 
 # 临时文件
-tmp/
-temp/ 
+/tmp/
+*.tmp
+
+# 编译输出
+/bin/
+/dist/
+
+# 证书和密钥
+*.pem
+*.key
+*.cert
+
+# Golang特定文件
+/go.work
+
+# Helius API密钥相关
+.env
+.env.local 

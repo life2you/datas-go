@@ -1,256 +1,311 @@
-# datas-go
+# Solana 区块解析器
 
-## 项目简介
+这个项目是一个用Go语言编写的Solana区块链解析器，可以获取和解析Solana区块链上的区块和交易数据。
 
-这是一个用于连接PumpPortal WebSocket API的Python客户端，可以获取实时交易和代币创建数据，并存储到PostgreSQL数据库中。通过这个客户端，您可以订阅以下类型的实时数据：
+## 功能特性
 
-- 新代币创建事件
-- 迁移事件
-- 账户交易事件
-- 代币交易事件
-
-## 项目结构
-
-```
-datas-go/
-├── src/                    # 源代码目录
-│   ├── api/                # API接口模块
-│   ├── config/             # 配置文件
-│   ├── db/                 # 数据库相关模块
-│   ├── models/             # 数据模型
-│   ├── utils/              # 工具函数
-│   ├── main.py             # 主程序入口
-│   └── pump_portal_client.py # WebSocket客户端
-├── venv/                   # 虚拟环境
-├── .env                    # 环境变量配置
-├── init.py                 # 初始化脚本
-├── requirements.txt        # 项目依赖
-├── run.py                  # 主启动脚本
-├── run_api.py              # API服务器启动脚本
-├── table.sql               # 数据库表结构
-├── API_DOCUMENTATION.md    # API文档
-└── README.md               # 项目说明
-```
+- RPC客户端：与Solana节点通信，支持代理和自定义HTTP头
+- 区块解析：解析区块数据和交易
+- WebSocket订阅：实时接收链上事件的通知
+- Redis存储：持久化存储区块数据，支持高效检索
+- 交易解析：解析不同类型的交易和指令
 
 ## 安装
 
-1. 克隆仓库：
-
 ```bash
-git clone https://github.com/yourusername/datas-go.git
-cd datas-go
-```
-
-2. 运行初始化脚本：
-
-```bash
-python init.py
-```
-
-初始化脚本会自动完成以下工作：
-- 创建虚拟环境并安装依赖
-- 初始化数据库表结构
-
-如果需要跳过某些步骤，可以使用参数：
-- `--skip-venv`：跳过虚拟环境设置
-- `--skip-db`：跳过数据库初始化
-
-## 配置
-
-编辑`.env`文件设置环境变量：
-
-```
-# 数据库配置
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=pumpportal
-DB_USER=postgres
-DB_PASSWORD=postgres
-
-# WebSocket API配置
-WEBSOCKET_URI=wss://pumpportal.fun/api/data
-
-# 日志配置
-LOG_LEVEL=INFO
-
-# 其他配置
-RETRY_ATTEMPTS=3
-RETRY_DELAY=5
-
-# 事件监听配置
-# 是否监听新代币创建事件 (true/false)
-LISTEN_NEW_TOKEN=true
-# 是否监听迁移事件 (true/false)
-LISTEN_MIGRATION=true
-# 是否启用静默模式，不在控制台打印事件数据 (true/false)
-QUIET_MODE=false
-# 要监控的账户地址列表，用逗号分隔
-WATCH_ACCOUNTS=AArPXm8JatJiuyEffuC1un2Sc835SULa4uQqDcaGpAjV
-# 要监控的代币地址列表，用逗号分隔
-WATCH_TOKENS=91WNez8D22NwBssQbkzjy4s2ipFrzpmn5hfvWVe2aY5p
-```
-
-### 事件监听配置说明
-
-您可以通过修改`.env`文件中的以下设置来配置要监听的事件：
-
-- `LISTEN_NEW_TOKEN`：设置为`true`或`false`，控制是否监听新代币创建事件
-- `LISTEN_MIGRATION`：设置为`true`或`false`，控制是否监听迁移事件
-- `QUIET_MODE`：设置为`true`或`false`，控制是否在控制台显示接收到的事件数据
-- `WATCH_ACCOUNTS`：要监听的账户地址列表，多个地址用逗号分隔
-- `WATCH_TOKENS`：要监听的代币地址列表，多个地址用逗号分隔
-
-## 数据库设置
-
-1. 确保PostgreSQL服务器已安装并启动
-2. 创建数据库：
-
-```bash
-createdb pumpportal
-```
-
-3. 初始化数据库表结构：
-
-```bash
-python -m src.db.init_db
+go get github.com/life2you/datas-go
 ```
 
 ## 使用方法
 
-### 基本用法
+### RPC客户端
 
-```bash
-# 激活虚拟环境
-source venv/bin/activate  # Linux/Mac
-# 或
-venv\Scripts\activate     # Windows
+```go
+package main
 
-# 运行主程序
-python -m src.main
+import (
+    "context"
+    "fmt"
+    "log"
+    
+    "github.com/life2you/datas-go/rpc"
+)
+
+func main() {
+    // 创建RPC客户端
+    client := rpc.NewClient("https://api.mainnet-beta.solana.com")
+    
+    // 获取最新区块高度
+    ctx := context.Background()
+    slot, err := client.GetLatestBlockHeight(ctx)
+    if err != nil {
+        log.Fatalf("获取最新区块高度失败: %v", err)
+    }
+    fmt.Printf("最新区块高度: %d\n", slot)
+    
+    // 获取区块数据
+    block, err := client.GetBlock(ctx, slot)
+    if err != nil {
+        log.Fatalf("获取区块数据失败: %v", err)
+    }
+    fmt.Printf("区块哈希: %s, 交易数量: %d\n", block.Blockhash, len(block.Transactions))
+}
 ```
 
-### 查看当前配置
+### WebSocket客户端
 
-要查看当前从配置文件加载的设置：
+```go
+package main
 
-```bash
-python -m src.main --config
+import (
+    "context"
+    "encoding/json"
+    "log"
+    "os"
+    "time"
+    
+    "github.com/life2you/datas-go/rpc"
+)
+
+func main() {
+    // 从环境变量获取API密钥
+    apiKey := os.Getenv("HELIUS_API_KEY")
+    if apiKey == "" {
+        log.Fatal("请设置HELIUS_API_KEY环境变量")
+    }
+    
+    // 创建WebSocket客户端
+    client, err := rpc.NewWebSocketClient("mainnet", apiKey)
+    if err != nil {
+        log.Fatalf("创建WebSocket客户端失败: %v", err)
+    }
+    
+    // 连接WebSocket服务器
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+    if err := client.Connect(ctx); err != nil {
+        log.Fatalf("连接WebSocket服务器失败: %v", err)
+    }
+    
+    // 订阅插槽更新
+    slotSubID, err := client.SlotSubscribe(func(result json.RawMessage) {
+        var slotInfo struct {
+            Parent uint64 `json:"parent"`
+            Root   uint64 `json:"root"`
+            Slot   uint64 `json:"slot"`
+        }
+        if err := json.Unmarshal(result, &slotInfo); err != nil {
+            log.Printf("解析插槽数据失败: %v", err)
+            return
+        }
+        log.Printf("新插槽: %d", slotInfo.Slot)
+    })
+    if err != nil {
+        log.Fatalf("订阅插槽更新失败: %v", err)
+    }
+    
+    // 保持程序运行
+    time.Sleep(5 * time.Minute)
+    
+    // 取消订阅
+    if err := client.SlotUnsubscribe(slotSubID); err != nil {
+        log.Printf("取消插槽订阅失败: %v", err)
+    }
+    
+    // 关闭连接
+    client.Close()
+}
 ```
 
-### 命令行参数
+### Redis存储
 
-```bash
-python -m src.main --help
+Redis存储服务用于持久化存储Solana区块数据，支持高效检索和查询。
+
+```go
+package main
+
+import (
+    "context"
+    "log"
+    
+    "github.com/life2you/datas-go/storage"
+)
+
+func main() {
+    // 创建Redis客户端
+    redis, err := storage.NewDefaultRedisClient()
+    if err != nil {
+        log.Fatalf("初始化Redis客户端失败: %v", err)
+    }
+    defer redis.Close()
+    
+    ctx := context.Background()
+    
+    // 获取最小区块高度
+    minSlot, minBlock, err := redis.GetMinBlock(ctx)
+    if err == nil {
+        log.Printf("最小区块高度: %d, 哈希: %s", minSlot, minBlock.Blockhash)
+    }
+    
+    // 获取最大区块高度
+    maxSlot, maxBlock, err := redis.GetMaxBlock(ctx)
+    if err == nil {
+        log.Printf("最大区块高度: %d, 哈希: %s", maxSlot, maxBlock.Blockhash)
+    }
+    
+    // 获取存储的区块总数
+    count, _ := redis.GetBlockCount(ctx)
+    log.Printf("存储的区块总数: %d", count)
+}
 ```
 
-可用参数（这些参数会覆盖配置文件中的设置）：
-- `--accounts`：指定要监控的账户地址列表
-- `--tokens`：指定要监控的代币地址列表
-- `--no-new-token`：不订阅新代币创建事件
-- `--no-migration`：不订阅迁移事件
-- `--quiet`：不在控制台打印事件数据
-- `--config`：显示当前配置信息并退出
+自定义Redis连接选项：
 
-示例：
+```go
+options := storage.RedisOptions{
+    Addr:     "redis.example.com:6379",
+    Password: "your-password",
+    DB:       0,
+    PoolSize: 20,
+}
 
-```bash
-# 监控特定账户和代币（覆盖配置文件中的设置）
-python -m src.main --accounts AArPXm8JatJiuyEffuC1un2Sc835SULa4uQqDcaGpAjV --tokens 91WNez8D22NwBssQbkzjy4s2ipFrzpmn5hfvWVe2aY5p
-
-# 静默模式，只存储数据不打印
-python -m src.main --quiet
+redis, err := storage.NewRedisClient(options)
 ```
 
-## 使用API服务
+## WebSocket订阅类型
 
-该项目提供了一个基于FastAPI的REST API服务，用于前端应用访问代币数据。
+该客户端支持以下Solana WebSocket订阅类型：
 
-### 启动API服务器
+1. **账户订阅**：监控特定账户的变更
+   ```go
+   client.AccountSubscribe(accountPubkey, "jsonParsed", "finalized", handler)
+   ```
 
-```bash
-# 使用默认配置（监听 0.0.0.0:8000）
-python run_api.py
+2. **程序订阅**：监控特定程序的所有账户变更
+   ```go
+   client.ProgramSubscribe(programID, "jsonParsed", handler)
+   ```
 
-# 自定义主机和端口
-python run_api.py --host 127.0.0.1 --port 8080
+3. **插槽订阅**：监控新区块插槽
+   ```go
+   client.SlotSubscribe(handler)
+   ```
+
+4. **签名订阅**：监控特定交易签名的状态
+   ```go
+   client.SignatureSubscribe(signature, "finalized", false, handler)
+   ```
+
+5. **日志订阅**：监控满足特定条件的日志
+   ```go
+   client.LogsSubscribe("all", "finalized", handler) // 监控所有日志
+   client.LogsSubscribe({mentionsAccountId: "your-account-id"}, "finalized", handler) // 监控特定账户相关的日志
+   ```
+
+6. **区块订阅**：监控新的区块并处理区块数据
+   ```go
+   client.BlockSubscribe("finalized", handler) // 只接收已确认的区块
+   ```
+
+## 使用代理
+
+本项目支持通过HTTP代理连接Solana节点和Helius WebSocket服务。
+
+### 配置代理
+
+在 `config.yaml` 中设置代理URL：
+
+```yaml
+# RPC客户端配置
+rpc:
+  endpoint: https://api.mainnet-beta.solana.com  # Solana RPC节点地址
+  proxy_url: "http://your-proxy-server:port"     # 代理服务器URL
+
+# WebSocket客户端配置
+websocket:
+  enabled: true
+  network_type: mainnet
+  api_key: "your-helius-api-key"
+  proxy_url: "http://your-proxy-server:port"     # 代理服务器URL
 ```
 
-### API文档
+通过代码设置代理：
 
-启动API服务器后，可以访问以下URL查看交互式API文档：
+```go
+// 配置WebSocket
+configs.GlobalConfig.WebSocket.ProxyURL = "http://your-proxy-server:port"
 
-- Swagger UI: `http://your-host:8000/docs`
-- ReDoc: `http://your-host:8000/redoc`
-
-### 主要API接口
-
-API服务提供以下主要接口：
-
-1. **代币列表** - `GET /api/tokens`
-   - 获取所有代币的列表，支持分页、排序和筛选
-
-2. **代币详情** - `GET /api/tokens/{mint}`
-   - 获取特定代币的详细信息
-
-3. **代币回复列表** - `GET /api/tokens/{mint}/replies`
-   - 获取特定代币的所有回复，支持分页
-
-4. **代币交易列表** - `GET /api/tokens/{mint}/trades`
-   - 获取特定代币的所有交易，支持分页和交易类型筛选
-
-完整的API文档请参考 [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)。
-
-## 数据库表结构
-
-数据存储在`token_events`表中，表结构如下：
-
-```sql
-CREATE TABLE token_events (
-    id SERIAL PRIMARY KEY,
-    signature TEXT NOT NULL,
-    mint TEXT NOT NULL,
-    trader_public_key TEXT NOT NULL,
-    tx_type TEXT NOT NULL,
-    initial_buy NUMERIC(20, 6),
-    sol_amount NUMERIC(20, 9),
-    bonding_curve_key TEXT,
-    v_tokens_in_bonding_curve NUMERIC(20, 6),
-    v_sol_in_bonding_curve NUMERIC(20, 9),
-    market_cap_sol NUMERIC(20, 9),
-    name TEXT,
-    symbol TEXT,
-    uri TEXT,
-    pool TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+// 初始化WebSocket客户端
+rpcClient, err := rpc.NewWebSocketClientOptions(&configs.GlobalConfig.WebSocket)
+if err != nil {
+    logger.Fatal("初始化WebSocket客户端失败", zap.Error(err))
+}
 ```
 
-## API 参考
+### 注意事项
 
-### PumpPortalClient 类
+- 使用代理时，建议配置连接超时和重试机制。
+- 在生产环境中，请确保代理服务器的安全性和可靠性。
 
-主要的客户端类，用于连接WebSocket服务器并处理消息。
+## Redis存储功能
 
-#### 方法
+Redis存储服务提供以下主要功能：
 
-- `connect()` - 连接到WebSocket服务器
-- `disconnect()` - 断开与WebSocket服务器的连接
-- `subscribe_new_token()` - 订阅新代币创建事件
-- `subscribe_migration()` - 订阅迁移事件
-- `subscribe_account_trade(accounts)` - 订阅账户交易事件
-- `subscribe_token_trade(tokens)` - 订阅代币交易事件
-- `unsubscribe_new_token()` - 取消订阅新代币创建事件
-- `unsubscribe_account_trade()` - 取消订阅账户交易事件
-- `unsubscribe_token_trade()` - 取消订阅代币交易事件
-- `listen()` - 开始监听消息
+1. **存储区块**: 将区块数据存储到Redis中
+   ```go
+   redis.StoreBlock(ctx, slot, block)
+   ```
 
-#### 事件处理
+2. **获取区块**: 根据区块高度获取区块数据
+   ```go
+   block, err := redis.GetBlockBySlot(ctx, slot)
+   ```
 
-- `on_new_token(callback)` - 注册新代币创建事件回调
-- `on_migration(callback)` - 注册迁移事件回调
-- `on_account_trade(callback)` - 注册账户交易事件回调
-- `on_token_trade(callback)` - 注册代币交易事件回调
+3. **获取最小/最大区块**: 获取已存储的最小或最大高度的区块
+   ```go
+   minSlot, minBlock, err := redis.GetMinBlock(ctx)
+   maxSlot, maxBlock, err := redis.GetMaxBlock(ctx)
+   ```
+
+4. **删除区块**: 从存储中移除指定区块
+   ```go
+   redis.RemoveBlock(ctx, slot)
+   ```
+
+5. **检查区块是否存在**: 确认特定区块是否已存储
+   ```go
+   exists, err := redis.BlockExists(ctx, slot)
+   ```
+
+6. **获取存储统计**: 获取已存储区块的数量
+   ```go
+   count, err := redis.GetBlockCount(ctx)
+   ```
+
+7. **获取区块范围**: 获取指定范围内的区块高度列表
+   ```go
+   slots, err := redis.GetBlocksRange(ctx, 0, 9) // 获取前10个区块
+   ```
+
+## 错误处理与重连
+
+WebSocket客户端内建自动重连机制，当连接断开时会自动尝试重新连接。此外，它还包含心跳机制以保持连接活跃。
+
+## 自定义选项
+
+可以通过自定义选项创建WebSocket客户端：
+
+```go
+options := rpc.WebSocketOptions{
+    ReconnectInterval: 3 * time.Second,
+    OnConnect: func() {
+        log.Println("WebSocket连接已建立")
+    },
+}
+client, err := rpc.NewWebSocketClientOptions("mainnet", apiKey, options)
+```
 
 ## 许可证
 
 MIT
+ 
