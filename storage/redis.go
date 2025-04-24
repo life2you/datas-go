@@ -9,8 +9,10 @@ import (
 
 	"github.com/gagliardetto/solana-go/rpc"
 	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
 
 	"github.com/life2you/datas-go/configs"
+	"github.com/life2you/datas-go/logger"
 )
 
 const (
@@ -22,8 +24,10 @@ const (
 	BlockExpiration = 30 * 24 * time.Hour
 	// 默认扫描批次大小
 	DefaultScanCount = 100
-	// 交易签名队列
-	TransactionQueueKey = "solana:transaction:queue"
+	// 交易签名队列前缀 (按区块划分)
+	TransactionQueueKeyPrefix = "solana:transaction:queue"
+	// 区块处理记录集合
+	ProcessedBlocksKey = "solana:blocks:processed"
 )
 
 // 定义常见错误
@@ -380,28 +384,64 @@ func (r *RedisClient) StoreHash(ctx context.Context, key string, field string, v
 	return nil
 }
 
-// 队列操作方法
+// 交易签名队列相关操作
 
-// PushToTransactionQueue 将交易签名推送到队列
+// TransactionItem 表示交易队列中的项目
+type TransactionItem struct {
+	BlockSlot  uint64   `json:"block_slot"`  // 所属区块高度
+	Signatures []string `json:"signatures"`  // 交易签名
+	CreateTime int64    `json:"create_time"` // 创建时间(Unix时间戳)
+}
+
+// 获取区块对应的队列键名
+func getBlockQueueKey(blockSlot uint64) string {
+	return fmt.Sprintf("%s", TransactionQueueKeyPrefix)
+}
+
+// PushTransactionsForBlock 将交易签名存入指定区块的队列
 // 参数:
 //   - ctx: 上下文
+//   - blockSlot: 区块高度
 //   - signatures: 交易签名列表
 //
 // 返回:
 //   - error: 错误信息
-func (r *RedisClient) PushToTransactionQueue(ctx context.Context, signatures []string) error {
+func (r *RedisClient) PushTransactionsForBlock(ctx context.Context, blockSlot uint64, signatures []string) error {
 	if len(signatures) == 0 {
 		return nil
 	}
 
-	// 将字符串数组转换为接口数组
-	args := make([]interface{}, len(signatures))
-	for i, sig := range signatures {
-		args[i] = sig
+	// 获取区块对应的队列键名
+	queueKey := getBlockQueueKey(blockSlot)
+
+	// 将区块添加到处理记录
+	_, err := r.client.SAdd(ctx, ProcessedBlocksKey, blockSlot).Result()
+	if err != nil {
+		return fmt.Errorf("添加区块处理记录失败: %w", err)
 	}
 
-	// 使用RPUSH将签名添加到队列末尾
-	_, err := r.client.RPush(ctx, TransactionQueueKey, args...).Result()
+	// 当前时间戳
+	now := time.Now().Unix()
+
+	// 使用管道执行多个命令
+	pipe := r.client.Pipeline()
+
+	// 准备交易项目并序列化
+	item := TransactionItem{
+		BlockSlot:  blockSlot,
+		Signatures: signatures,
+		CreateTime: now,
+	}
+
+	// 序列化为JSON
+	itemJSON, err := json.Marshal(item)
+	if err != nil {
+		return fmt.Errorf("序列化交易项目失败: %w", err)
+	}
+	// 添加到队列
+	pipe.RPush(ctx, queueKey, itemJSON)
+	// 执行管道命令
+	_, err = pipe.Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("将交易签名推送到队列失败: %w", err)
 	}
@@ -409,64 +449,120 @@ func (r *RedisClient) PushToTransactionQueue(ctx context.Context, signatures []s
 	return nil
 }
 
-// PopFromTransactionQueue 从队列中弹出指定数量的交易签名
+// LPopTransactionQueue 从队列中获取一个区块交易批次
 // 参数:
 //   - ctx: 上下文
-//   - count: 要弹出的签名数量，如果为0则获取单个签名
 //
 // 返回:
-//   - []string: 交易签名列表
+//   - *TransactionItem: 交易项目，包含区块高度和交易签名
 //   - error: 错误信息
-func (r *RedisClient) PopFromTransactionQueue(ctx context.Context, count int) ([]string, error) {
+func (r *RedisClient) LPopTransactionQueue(ctx context.Context) (*TransactionItem, error) {
+	// 从队列中获取一个元素
+	itemJSON, err := r.client.LPop(ctx, TransactionQueueKeyPrefix).Result()
+	if err == redis.Nil {
+		// 队列为空
+		return nil, nil
+	} else if err != nil {
+		return nil, fmt.Errorf("从队列获取交易项目失败: %w", err)
+	}
+
+	// 反序列化交易项目
+	var item TransactionItem
+	if err := json.Unmarshal([]byte(itemJSON), &item); err != nil {
+		return nil, fmt.Errorf("解析交易项目失败: %w", err)
+	}
+
+	return &item, nil
+}
+
+// GetTransactionsFromBlock 从指定区块的队列中获取交易项目
+// 参数:
+//   - ctx: 上下文
+//   - blockSlot: 区块高度
+//   - count: 要获取的项目数量
+//
+// 返回:
+//   - []TransactionItem: 交易项目列表
+//   - error: 错误信息
+func (r *RedisClient) GetTransactionsFromBlock(ctx context.Context, blockSlot uint64, count int) ([]TransactionItem, error) {
 	if count <= 0 {
 		count = 1
 	}
 
-	// 使用LPOP获取队列头部的元素（保证先进先出）
-	if count == 1 {
-		sig, err := r.client.LPop(ctx, TransactionQueueKey).Result()
-		if err == redis.Nil {
-			// 队列为空
-			return nil, nil
-		} else if err != nil {
-			return nil, fmt.Errorf("从队列中获取交易签名失败: %w", err)
-		}
-		return []string{sig}, nil
+	// 获取区块对应的队列键名
+	queueKey := getBlockQueueKey(blockSlot)
+
+	// 检查队列是否存在
+	exists, err := r.client.Exists(ctx, queueKey).Result()
+	if err != nil {
+		return nil, fmt.Errorf("检查队列存在失败: %w", err)
 	}
 
-	// 使用LPOP命令多次获取多个元素
+	if exists == 0 {
+		// 队列不存在
+		return nil, nil
+	}
+
+	// 获取队列长度
+	queueLen, err := r.client.LLen(ctx, queueKey).Result()
+	if err != nil {
+		return nil, fmt.Errorf("获取队列长度失败: %w", err)
+	}
+
+	if queueLen == 0 {
+		// 队列为空
+		return nil, nil
+	}
+
+	// 调整count，不超过队列长度
+	if int64(count) > queueLen {
+		count = int(queueLen)
+	}
+
+	// 使用管道执行多个LPOP命令
 	pipe := r.client.Pipeline()
 	for i := 0; i < count; i++ {
-		pipe.LPop(ctx, TransactionQueueKey)
+		pipe.LPop(ctx, queueKey)
 	}
 
+	// 执行管道命令
 	cmds, err := pipe.Exec(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("从队列中批量获取交易签名失败: %w", err)
+		return nil, fmt.Errorf("从队列获取交易项目失败: %w", err)
 	}
 
-	signatures := make([]string, 0, count)
+	// 解析结果
+	items := make([]TransactionItem, 0, count)
 	for _, cmd := range cmds {
 		// 检查命令是否成功
 		if cmd.Err() == redis.Nil {
 			// 队列已经为空，退出循环
 			break
 		} else if cmd.Err() != nil {
-			return signatures, fmt.Errorf("从队列中获取交易签名失败: %w", cmd.Err())
+			return items, fmt.Errorf("从队列获取交易项目失败: %w", cmd.Err())
 		}
 
-		// 提取签名
-		sig, err := cmd.(*redis.StringCmd).Result()
+		// 获取JSON字符串
+		itemJSON, err := cmd.(*redis.StringCmd).Result()
 		if err != nil {
+			logger.Warn("获取交易项目结果失败", zap.Error(err))
 			continue
 		}
-		signatures = append(signatures, sig)
+
+		// 反序列化
+		var item TransactionItem
+		if err := json.Unmarshal([]byte(itemJSON), &item); err != nil {
+			logger.Warn("解析交易项目失败", zap.String("json", itemJSON), zap.Error(err))
+			continue
+		}
+
+		items = append(items, item)
 	}
 
-	return signatures, nil
+	return items, nil
 }
 
-// GetTransactionQueueLength 获取交易签名队列长度
+// GetTransactionQueueLength 获取交易队列长度
 // 参数:
 //   - ctx: 上下文
 //
@@ -474,9 +570,65 @@ func (r *RedisClient) PopFromTransactionQueue(ctx context.Context, count int) ([
 //   - int64: 队列长度
 //   - error: 错误信息
 func (r *RedisClient) GetTransactionQueueLength(ctx context.Context) (int64, error) {
-	length, err := r.client.LLen(ctx, TransactionQueueKey).Result()
+	length, err := r.client.LLen(ctx, TransactionQueueKeyPrefix).Result()
 	if err != nil {
-		return 0, fmt.Errorf("获取交易签名队列长度失败: %w", err)
+		return 0, fmt.Errorf("获取交易队列长度失败: %w", err)
 	}
 	return length, nil
+}
+
+// RemoveProcessedBlock 从已处理区块集合中移除指定区块
+// 参数:
+//   - ctx: 上下文
+//   - blockSlot: 区块高度
+//
+// 返回:
+//   - error: 错误信息
+func (r *RedisClient) RemoveProcessedBlock(ctx context.Context, blockSlot uint64) error {
+	_, err := r.client.SRem(ctx, ProcessedBlocksKey, blockSlot).Result()
+	if err != nil {
+		return fmt.Errorf("从已处理区块集合移除区块失败: %w", err)
+	}
+	return nil
+}
+
+// 保持向下兼容的方法
+
+// PushToTransactionQueue 将交易签名推送到队列 (向下兼容)
+func (r *RedisClient) PushToTransactionQueue(ctx context.Context, signatures []string) error {
+	// 使用一个默认区块高度
+	return r.PushTransactionsForBlock(ctx, 0, signatures)
+}
+
+// PopFromTransactionQueue 从队列中弹出指定数量的交易签名 (向下兼容)
+func (r *RedisClient) PopFromTransactionQueue(ctx context.Context, count int) ([]string, error) {
+	var allSignatures []string
+
+	// 尝试获取足够的交易批次，直到收集足够的签名或队列为空
+	for len(allSignatures) < count {
+		item, err := r.LPopTransactionQueue(ctx)
+		if err != nil {
+			return allSignatures, err
+		}
+
+		if item == nil {
+			// 队列为空
+			break
+		}
+
+		// 添加签名到结果集
+		allSignatures = append(allSignatures, item.Signatures...)
+
+		// 如果已经收集足够的签名，可以提前退出
+		if len(allSignatures) >= count {
+			break
+		}
+	}
+
+	// 如果收集的签名超过请求的数量，只返回请求的数量
+	if len(allSignatures) > count {
+		return allSignatures[:count], nil
+	}
+
+	return allSignatures, nil
 }

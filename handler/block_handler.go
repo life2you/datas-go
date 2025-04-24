@@ -26,7 +26,7 @@ func StartScanBlockQueue() {
 		return
 	}
 
-	logger.Infof("-----[区块数据]---------->>>开始处理区块 %d<<<---------------", slot)
+	logger.Info("开始处理区块", zap.Uint64("slot", slot))
 	blockResp, err := rpc.GlobalHeliusClient.GetBlock(ctx, slot, nil)
 	if err != nil {
 		logger.Error("获取区块数据失败", zap.Uint64("slot", slot), zap.Error(err))
@@ -46,7 +46,7 @@ func StartScanBlockQueue() {
 		return
 	}
 
-	logger.Infof("-----[区块数据]---------->>>获取区块交易记录,区块高度：%d<<<---------------", slot)
+	logger.Info("获取区块成功", zap.Uint64("slot", slot))
 
 	// 收集签名
 	trans := make([]resp.Transactions, 0)
@@ -74,16 +74,16 @@ func StartScanBlockQueue() {
 		signatures = append(signatures, transaction.Transaction.Signatures...)
 	}
 
-	// 将签名存入Redis队列，而不是直接解析
+	// 将签名存入Redis队列，使用区块高度进行分组
 	if len(signatures) > 0 {
-		if err := storage.GlobalRedisClient.PushToTransactionQueue(ctx, signatures); err != nil {
+		if err := storage.GlobalRedisClient.PushTransactionsForBlock(ctx, slot, signatures); err != nil {
 			logger.Error("将交易签名推送到队列失败", zap.Error(err), zap.Uint64("slot", slot))
 			return
 		}
-		logger.Infof("-----[区块数据]---------->>>交易签名已推送到队列,交易数：%d,区块高度：%d<<<---------------", len(signatures), slot)
+		logger.Info("交易签名已推送到区块队列", zap.Int("交易数", len(signatures)), zap.Uint64("slot", slot))
 	} else {
-		logger.Infof("-----[区块数据]---------->>>没有有效交易需要解析,区块高度：%d<<<---------------", slot)
+		logger.Info("没有有效交易需要解析", zap.Uint64("slot", slot))
 	}
 
-	logger.Infof("-----[区块数据]---------->>>区块处理完成,区块高度：%d<<<---------------", slot)
+	logger.Info("区块处理完成", zap.Uint64("slot", slot))
 }

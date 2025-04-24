@@ -90,8 +90,8 @@ func main() {
 }
 
 func initStartService() {
-	//service.StartHeliusService()
-	time.Sleep(3 * time.Second)
+	service.StartHeliusService()
+	time.Sleep(5 * time.Second)
 	service.ScanBlockQueue()
 	service.ProcessTransactionQueue()
 	logger.Info("所有服务已启动: 区块队列扫描服务、交易队列处理服务")
