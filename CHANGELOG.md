@@ -18,6 +18,13 @@
 - **添加Helius区块订阅功能，支持通过WebSocket订阅并处理最新区块**
 - **实现代理支持，可通过配置使用HTTP代理连接Helius WebSocket**
 - **添加从Helius接收的区块数据存储到Redis的功能**
+- **实现Helius Enhanced Transactions API支持，包括交易解析和丰富的交易历史查询功能**
+  - **提供ParseTransactions函数，支持解析单个或多个交易签名为结构化数据**
+  - **添加GetEnrichedTransactionHistory函数，支持按地址查询丰富的交易历史**
+  - **支持各种查询参数，如分页、交易类型筛选等**
+- **添加详细的Helius API使用文档，包括示例代码和配置说明**
+- **支持通过代理连接Helius API服务，提高在特定网络环境下的稳定性**
+- **实现了完整的错误处理和响应解析机制，提高了API调用的可靠性**
 
 ### 修复
 - 修复了RPC调用错误，在GetBlock方法中添加了maxSupportedTransactionVersion参数

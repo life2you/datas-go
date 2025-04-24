@@ -6,6 +6,7 @@ require (
 	github.com/gagliardetto/solana-go v1.12.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/redis/go-redis/v9 v9.7.3
+	github.com/shopspring/decimal v1.3.1
 	github.com/spf13/viper v1.20.1
 	go.uber.org/zap v1.27.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1

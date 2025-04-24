@@ -23,7 +23,7 @@ func HeliusSlotHandler(result json.RawMessage) {
 		return
 	}
 
-	logger.Info("收到新槽位通知", zap.Uint64("slot", slotInfo.Slot))
+	logger.Debug("收到新槽位通知", zap.Uint64("slot", slotInfo.Slot))
 
 	storage.GlobalRedisClient.StoreBlock(context.Background(), slotInfo.Slot)
 }

@@ -12,11 +12,13 @@ import (
 
 // Config 包含应用程序的所有配置
 type Config struct {
-	App       AppConfig       `mapstructure:"app"`
-	Log       LogConfig       `mapstructure:"log"`
-	Proxy     ProxyConfig     `mapstructure:"proxy"`
-	Redis     RedisConfig     `mapstructure:"redis"`
-	WebSocket WebSocketConfig `mapstructure:"websocket"`
+	App               AppConfig               `mapstructure:"app"`
+	Log               LogConfig               `mapstructure:"log"`
+	Proxy             ProxyConfig             `mapstructure:"proxy"`
+	Redis             RedisConfig             `mapstructure:"redis"`
+	WebSocket         WebSocketConfig         `mapstructure:"websocket"`
+	HeliusAPI         HeliusAPIConfig         `mapstructure:"helius_api"`
+	HeliusEnhancedAPI HeliusEnhancedAPIConfig `mapstructure:"helius_enhanced_api"`
 }
 
 // AppConfig 应用基本配置
@@ -55,6 +57,19 @@ type WebSocketConfig struct {
 	ReconnectInterval time.Duration `mapstructure:"reconnect_interval"` // 重连间隔
 	ProxyURL          string        `mapstructure:"proxy_url"`          // 代理服务器URL
 	OnConnect         func()        // 连接建立时的回调函数
+}
+
+// HeliusAPIConfig Helius API配置
+type HeliusAPIConfig struct {
+	APIKey   string `mapstructure:"api_key"`   // Helius API密钥
+	Endpoint string `mapstructure:"endpoint"`  // Helius API端点
+	ProxyURL string `mapstructure:"proxy_url"` // 代理服务器URL
+}
+
+type HeliusEnhancedAPIConfig struct {
+	APIKeys  []string `mapstructure:"api_keys"`  // 多个Helius API密钥
+	Endpoint string   `mapstructure:"endpoint"`  // Helius API端点
+	ProxyURL string   `mapstructure:"proxy_url"` // 代理服务器URL
 }
 
 // ProxyConfig 代理配置

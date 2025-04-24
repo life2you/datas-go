@@ -9,6 +9,7 @@
 - WebSocket订阅：实时接收链上事件的通知
 - Redis存储：持久化存储区块数据，支持高效检索
 - 交易解析：解析不同类型的交易和指令
+- Helius API：支持高级区块链数据查询和丰富的交易数据
 
 ## 安装
 
@@ -49,6 +50,76 @@ func main() {
         log.Fatalf("获取区块数据失败: %v", err)
     }
     fmt.Printf("区块哈希: %s, 交易数量: %d\n", block.Blockhash, len(block.Transactions))
+}
+```
+
+### Helius API 客户端
+
+Helius API 提供了增强的 Solana 数据查询功能，包括交易解析和丰富的交易历史查询。
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "log"
+    "os"
+    
+    "github.com/life2you/datas-go/rpc"
+)
+
+func main() {
+    // 获取 Helius API 密钥
+    apiKey := os.Getenv("HELIUS_API_KEY")
+    if apiKey == "" {
+        log.Fatal("请设置 HELIUS_API_KEY 环境变量")
+    }
+    
+    // 创建 Helius 客户端
+    heliusClient := rpc.NewHeliusClient("https://api.helius.xyz/v0", apiKey)
+    
+    ctx := context.Background()
+    
+    // 解析交易
+    txSignatures := []string{
+        "2UcHTFpDv2equZPFpkrmsXCuZ7ZBygxsrXpzNy1xCaLCaAPcyi8vXnzGgFW8ygLEu4brECXTY8XrZEGW8vYGfcqD",
+        "5L8r6xSKCBgP2vQBgFLN6Z9KvpicyEBxyeQB4y76xXC5Syh1iJBvyKvvEnxXwYtKrRo2nVe5vDQ2QTCKmyRqrBeV",
+    }
+    
+    parsedTxs, err := heliusClient.ParseTransactions(ctx, txSignatures)
+    if err != nil {
+        log.Fatalf("解析交易失败: %v", err)
+    }
+    
+    for i, tx := range parsedTxs {
+        fmt.Printf("交易 %s 解析结果:\n", txSignatures[i])
+        fmt.Printf("  类型: %s\n", tx.Type)
+        fmt.Printf("  描述: %s\n", tx.Description)
+        fmt.Printf("  费用: %d lamports\n", tx.Fee)
+        fmt.Printf("  状态: %s\n\n", tx.Status)
+    }
+    
+    // 获取丰富的交易历史
+    walletAddress := "Your_Wallet_Address"
+    
+    options := rpc.EnrichedHistoryOptions{
+        Limit: 10,
+        Types: []string{"SWAP", "NFT_SALE"},
+    }
+    
+    history, err := heliusClient.GetEnrichedTransactionHistory(ctx, walletAddress, options)
+    if err != nil {
+        log.Fatalf("获取交易历史失败: %v", err)
+    }
+    
+    fmt.Printf("地址 %s 的交易历史:\n", walletAddress)
+    for _, tx := range history {
+        fmt.Printf("  签名: %s\n", tx.Signature)
+        fmt.Printf("  类型: %s\n", tx.Type)
+        fmt.Printf("  时间戳: %d\n", tx.Timestamp)
+        fmt.Printf("  描述: %s\n\n", tx.Description)
+    }
 }
 ```
 
@@ -207,6 +278,54 @@ redis, err := storage.NewRedisClient(options)
    client.BlockSubscribe("finalized", handler) // 只接收已确认的区块
    ```
 
+## Helius API 高级功能
+
+Helius API 提供以下高级功能：
+
+### 1. 交易解析 (ParseTransactions)
+
+解析交易签名为结构化数据，包含丰富的交易详情：
+
+```go
+parsedTxs, err := heliusClient.ParseTransactions(ctx, []string{"transaction-signature"})
+```
+
+解析结果包含：
+- 交易类型（转账、交换、NFT 销售等）
+- 交易描述
+- 交易状态
+- 费用详情
+- 账户列表
+- 代币转移详情
+- 原始交易数据
+
+### 2. 丰富的交易历史 (GetEnrichedTransactionHistory)
+
+获取钱包地址的丰富交易历史：
+
+```go
+options := rpc.EnrichedHistoryOptions{
+    Limit:     20,             // 返回的交易数量
+    Before:    "tx-signature", // 分页：获取此签名之前的交易
+    Types:     []string{"SWAP", "NFT_SALE"}, // 筛选交易类型
+    SortOrder: "desc",         // 排序顺序：desc 或 asc
+}
+
+history, err := heliusClient.GetEnrichedTransactionHistory(ctx, "wallet-address", options)
+```
+
+支持的交易类型筛选：
+- `NFT_MINT`：NFT 铸造
+- `NFT_SALE`：NFT 销售
+- `NFT_LISTING`：NFT 上架
+- `NFT_CANCEL_LISTING`：取消 NFT 上架
+- `NFT_AUCTION_CREATED`：NFT 拍卖创建
+- `NFT_BID`：NFT 出价
+- `NFT_AUCTION_COMPLETE`：NFT 拍卖完成
+- `SWAP`：代币交换
+- `TRANSFER`：代币或 SOL 转账
+- ...更多类型
+
 ## 使用代理
 
 本项目支持通过HTTP代理连接Solana节点和Helius WebSocket服务。
@@ -227,6 +346,12 @@ websocket:
   network_type: mainnet
   api_key: "your-helius-api-key"
   proxy_url: "http://your-proxy-server:port"     # 代理服务器URL
+  
+# Helius API 配置
+helius:
+  endpoint: "https://api.helius.xyz/v0"
+  api_key: "your-helius-api-key"
+  proxy_url: "http://your-proxy-server:port"     # 代理服务器URL
 ```
 
 通过代码设置代理：
@@ -240,6 +365,10 @@ rpcClient, err := rpc.NewWebSocketClientOptions(&configs.GlobalConfig.WebSocket)
 if err != nil {
     logger.Fatal("初始化WebSocket客户端失败", zap.Error(err))
 }
+
+// 配置Helius客户端
+heliusClient := rpc.NewHeliusClient("https://api.helius.xyz/v0", "your-helius-api-key")
+heliusClient.SetProxyURL("http://your-proxy-server:port")
 ```
 
 ### 注意事项
@@ -304,6 +433,58 @@ options := rpc.WebSocketOptions{
 }
 client, err := rpc.NewWebSocketClientOptions("mainnet", apiKey, options)
 ```
+
+## 交易解析功能
+
+### Swap 交易解析
+
+本项目支持将 Solana 区块链上的 Swap 交易解析为人类可读格式。
+
+#### 功能特点
+
+- 支持解析 SOL 与代币之间的交换交易
+- 支持解析代币与代币之间的交换交易
+- 格式化显示交易金额和代币单位
+- 自动判断交易方向（买入/卖出）
+
+#### 使用方法
+
+```bash
+# 通过命令行工具测试解析
+go run cmd/parser/main.go --tx-type=SWAP --sample-file=./testdata/sample_swap.json
+```
+
+#### 代码示例
+
+```go
+// 解析 Swap 交易
+func ParseSwapTransaction(tx *ParsedTransaction) string {
+    if tx == nil || tx.Events == nil || tx.Events.Swap == nil {
+        return "无效的Swap交易"
+    }
+    
+    swap := tx.Events.Swap
+    
+    // 解析逻辑...
+    
+    if isBuy {
+        return fmt.Sprintf("地址%s 用 %s SOL 购买了 %s个%s", 
+            formatShortAddress(account), solValue, tokenValue, tokenMint)
+    } else {
+        return fmt.Sprintf("地址%s 卖出 %s个%s 获得了 %s SOL", 
+            formatShortAddress(account), tokenValue, tokenMint, solValue)
+    }
+}
+```
+
+#### VS Code 调试配置
+
+项目包含完整的 VS Code 调试配置，可以轻松调试解析功能：
+
+1. 在 VS Code 中打开项目
+2. 选择 "运行和调试" 面板
+3. 从下拉菜单中选择 "调试交易解析" 或 "测试 Swap 解析器"
+4. 按 F5 开始调试
 
 ## 许可证
 

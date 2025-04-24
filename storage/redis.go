@@ -22,6 +22,8 @@ const (
 	BlockExpiration = 30 * 24 * time.Hour
 	// 默认扫描批次大小
 	DefaultScanCount = 100
+	// 交易签名队列
+	TransactionQueueKey = "solana:transaction:queue"
 )
 
 // 定义常见错误
@@ -160,11 +162,11 @@ func (r *RedisClient) GetMinBlock(ctx context.Context) (uint64, error) {
 	}
 
 	// 从有序集合中移除该区块
-	_, err = r.client.ZRem(ctx, BlocksZSetKey, slot).Result()
+	// 使用原始字符串格式的成员进行删除，与添加时的格式保持一致
+	_, err = r.client.ZRem(ctx, BlocksZSetKey, slots[0]).Result()
 	if err != nil {
 		return 0, fmt.Errorf("移除最小区块失败: %w", err)
 	}
-
 	return slot, nil
 }
 
@@ -339,34 +341,142 @@ func (r *RedisClient) ClearBlocks(ctx context.Context) error {
 	return nil
 }
 
-// StoreHeliusBlock 存储来自 Helius 的简化区块信息
+// 存储Hash到redis
+
+// StoreHash 存储哈希值到Redis
 // 参数:
 //   - ctx: 上下文
-//   - slot: 区块槽位
-//   - blockInfo: 包含区块信息的 map
-//   - expiration: 过期时间
+//   - key: 哈希键名
+//   - field: 哈希字段名
+//   - value: 哈希值
+//   - expiration: 过期时间，如果为0则不设置过期时间
 //
 // 返回:
 //   - error: 错误信息
-func (r *RedisClient) StoreHeliusBlock(ctx context.Context, slot uint64, blockInfo map[string]interface{}, expiration time.Duration) error {
+func (r *RedisClient) StoreHash(ctx context.Context, key string, field string, value interface{}, expiration time.Duration) error {
 	if r == nil || r.client == nil {
 		return errors.New("Redis 客户端尚未初始化")
 	}
 
-	// 将 map 序列化为 JSON 字符串
-	jsonData, err := json.Marshal(blockInfo)
-	if err != nil {
-		return fmt.Errorf("无法序列化 Helius 区块信息为 JSON: %w", err)
+	// 构建Redis键名
+	redisKey := fmt.Sprintf("solana:hash:%s", key)
+
+	// 使用管道执行多个命令以提高性能
+	pipe := r.client.Pipeline()
+
+	// 设置哈希字段值
+	pipe.HSet(ctx, redisKey, field, value)
+
+	// 如果指定了过期时间，则设置键的过期时间
+	if expiration > 0 {
+		pipe.Expire(ctx, redisKey, expiration)
 	}
 
-	// 使用 Helius 特定的前缀和 slot 作为 key
-	redisKey := fmt.Sprintf("helius:block:%d", slot)
-
-	// 使用 Set 命令存储 JSON 数据并设置过期时间
-	err = r.client.Set(ctx, redisKey, jsonData, expiration).Err()
+	// 执行管道命令
+	_, err := pipe.Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("无法将 Helius 区块信息存入 Redis (key: %s): %w", redisKey, err)
+		return fmt.Errorf("存储哈希值失败: %w", err)
+	}
+	return nil
+}
+
+// 队列操作方法
+
+// PushToTransactionQueue 将交易签名推送到队列
+// 参数:
+//   - ctx: 上下文
+//   - signatures: 交易签名列表
+//
+// 返回:
+//   - error: 错误信息
+func (r *RedisClient) PushToTransactionQueue(ctx context.Context, signatures []string) error {
+	if len(signatures) == 0 {
+		return nil
+	}
+
+	// 将字符串数组转换为接口数组
+	args := make([]interface{}, len(signatures))
+	for i, sig := range signatures {
+		args[i] = sig
+	}
+
+	// 使用RPUSH将签名添加到队列末尾
+	_, err := r.client.RPush(ctx, TransactionQueueKey, args...).Result()
+	if err != nil {
+		return fmt.Errorf("将交易签名推送到队列失败: %w", err)
 	}
 
 	return nil
+}
+
+// PopFromTransactionQueue 从队列中弹出指定数量的交易签名
+// 参数:
+//   - ctx: 上下文
+//   - count: 要弹出的签名数量，如果为0则获取单个签名
+//
+// 返回:
+//   - []string: 交易签名列表
+//   - error: 错误信息
+func (r *RedisClient) PopFromTransactionQueue(ctx context.Context, count int) ([]string, error) {
+	if count <= 0 {
+		count = 1
+	}
+
+	// 使用LPOP获取队列头部的元素（保证先进先出）
+	if count == 1 {
+		sig, err := r.client.LPop(ctx, TransactionQueueKey).Result()
+		if err == redis.Nil {
+			// 队列为空
+			return nil, nil
+		} else if err != nil {
+			return nil, fmt.Errorf("从队列中获取交易签名失败: %w", err)
+		}
+		return []string{sig}, nil
+	}
+
+	// 使用LPOP命令多次获取多个元素
+	pipe := r.client.Pipeline()
+	for i := 0; i < count; i++ {
+		pipe.LPop(ctx, TransactionQueueKey)
+	}
+
+	cmds, err := pipe.Exec(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("从队列中批量获取交易签名失败: %w", err)
+	}
+
+	signatures := make([]string, 0, count)
+	for _, cmd := range cmds {
+		// 检查命令是否成功
+		if cmd.Err() == redis.Nil {
+			// 队列已经为空，退出循环
+			break
+		} else if cmd.Err() != nil {
+			return signatures, fmt.Errorf("从队列中获取交易签名失败: %w", cmd.Err())
+		}
+
+		// 提取签名
+		sig, err := cmd.(*redis.StringCmd).Result()
+		if err != nil {
+			continue
+		}
+		signatures = append(signatures, sig)
+	}
+
+	return signatures, nil
+}
+
+// GetTransactionQueueLength 获取交易签名队列长度
+// 参数:
+//   - ctx: 上下文
+//
+// 返回:
+//   - int64: 队列长度
+//   - error: 错误信息
+func (r *RedisClient) GetTransactionQueueLength(ctx context.Context) (int64, error) {
+	length, err := r.client.LLen(ctx, TransactionQueueKey).Result()
+	if err != nil {
+		return 0, fmt.Errorf("获取交易签名队列长度失败: %w", err)
+	}
+	return length, nil
 }

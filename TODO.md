@@ -48,10 +48,27 @@
     - [x] 实现日志订阅 (LogsSubscribe)。
     - [x] 实现区块订阅 (BlockSubscribe)。
 
-- [ ] **WebSocket 使用整合:**
+- [x] **WebSocket 使用整合:**
     - [x] 创建 WebSocket 使用示例。
     - [x] 将 WebSocket 方式集成到区块解析器中，作为替代轮询的方式。
     - [x] 实现基于 BlockSubscribe 的区块数据存储功能。
+
+## Helius API 功能
+
+- [x] **基本 Helius API 客户端:**
+    - [x] 实现 Helius HTTP API 客户端连接。
+    - [x] 添加代理支持功能。
+    - [x] 实现错误处理和响应解析。
+
+- [x] **交易解析功能:**
+    - [x] 实现 ParseTransactions 方法，支持批量解析交易签名。
+    - [x] 处理丰富的交易响应数据，包括交易类型、描述、状态等。
+    - [x] 支持提取详细的代币转移信息和账户列表。
+
+- [x] **交易历史查询:**
+    - [x] 实现 GetEnrichedTransactionHistory 方法。
+    - [x] 支持分页、排序和交易类型筛选等查询参数。
+    - [x] 处理丰富的交易历史响应数据。
 
 ## Redis 存储功能
 

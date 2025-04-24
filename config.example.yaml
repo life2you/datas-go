@@ -60,3 +60,17 @@ proxy:
   enabled: false
   # 代理服务器URL，例如: http://proxy.example.com:8080
   url: ""
+
+# Helius API配置
+helius_api:
+  api_key: ""
+  endpoint: ""
+  proxy_url: ""
+
+# Helius Enhanced API配置
+helius_enhanced_api:
+  api_keys: 
+    - ""
+    - ""
+  endpoint: ""
+  proxy_url: ""

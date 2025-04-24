@@ -1,0 +1,162 @@
+{
+  "description": "Swap 1 SOL for 18.66 USDC via Jupiter",
+  "type": "SWAP",
+  "source": "JUPITER",
+  "fee": 5000,
+  "feePayer": "BqnpCdDLPRjiJyzxEn8DyNnYMJZ7YhBxEGpXr7PeTkFT",
+  "signature": "2Kpb7Wu3jnGFCpY8zKxhfK9i9XQ1nKxgCR6ZcfjasgDUVsKNAYvkWwRLJxJ9omWfUn9Yyd4QsQPaHadosZi9dSB9",
+  "slot": 217382012,
+  "timestamp": 1685481764,
+  "events": {
+    "swap": {
+      "nativeInput": {
+        "account": "BqnpCdDLPRjiJyzxEn8DyNnYMJZ7YhBxEGpXr7PeTkFT",
+        "amount": "1000000000"
+      },
+      "tokenOutputs": [
+        {
+          "userAccount": "BqnpCdDLPRjiJyzxEn8DyNnYMJZ7YhBxEGpXr7PeTkFT",
+          "tokenAccount": "H3fSgd9v1LUfGnqJ3TLHDfRz65rnWQVc5QmgDq7UGP69",
+          "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          "rawTokenAmount": {
+            "tokenAmount": "18660274",
+            "decimals": 6
+          }
+        }
+      ],
+      "tokenFees": [
+        {
+          "userAccount": "rXhAofQCT7NN9TUqiKD4BWMpPiyGJjGaXj5uWLiCTmp",
+          "tokenAccount": "Hhmdo5cGEHDJFAteD4wP3nPwEiQQtJbfgWYUJTFaqSEP",
+          "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          "rawTokenAmount": {
+            "tokenAmount": "18678",
+            "decimals": 6
+          }
+        }
+      ],
+      "innerSwaps": [
+        {
+          "tokenInputs": [],
+          "tokenOutputs": [
+            {
+              "fromUserAccount": "BqnpCdDLPRjiJyzxEn8DyNnYMJZ7YhBxEGpXr7PeTkFT",
+              "toUserAccount": "H9Hkeinmpgr9ufWKCgKHoDcNkK9s2JjoLfs3Kh2YJDJc",
+              "fromTokenAccount": "11111111111111111111111111111111",
+              "toTokenAccount": "DdBTJuiAXQQ7gLVXFFvvKvJgJ3gEECAtgN1a4AMkrMZ5",
+              "tokenAmount": "1000000000",
+              "mint": "So11111111111111111111111111111111111111112"
+            }
+          ],
+          "tokenFees": [
+            {
+              "fromUserAccount": "BqnpCdDLPRjiJyzxEn8DyNnYMJZ7YhBxEGpXr7PeTkFT",
+              "toUserAccount": "2wmVCSfPxGPjrnMMn7rchp4uaeoTqN39mXFC2zhPdri9",
+              "fromTokenAccount": "11111111111111111111111111111111",
+              "toTokenAccount": "5e6d2FS5UcF3yaKTiKZvhG9Vp5HLKJf1qKWMPVpSUAKg",
+              "tokenAmount": "3500000",
+              "mint": "So11111111111111111111111111111111111111112"
+            }
+          ],
+          "nativeFees": [],
+          "programInfo": {
+            "source": "ORCA_WHIRLPOOLS",
+            "account": "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+            "programName": "Orca Whirlpools",
+            "instructionName": "swap"
+          }
+        }
+      ]
+    }
+  },
+  "nativeTransfers": [
+    {
+      "fromUserAccount": "BqnpCdDLPRjiJyzxEn8DyNnYMJZ7YhBxEGpXr7PeTkFT",
+      "toUserAccount": "H9Hkeinmpgr9ufWKCgKHoDcNkK9s2JjoLfs3Kh2YJDJc",
+      "amount": 1000000000
+    },
+    {
+      "fromUserAccount": "BqnpCdDLPRjiJyzxEn8DyNnYMJZ7YhBxEGpXr7PeTkFT",
+      "toUserAccount": "2wmVCSfPxGPjrnMMn7rchp4uaeoTqN39mXFC2zhPdri9",
+      "amount": 3500000
+    }
+  ],
+  "tokenTransfers": [
+    {
+      "fromUserAccount": "H9Hkeinmpgr9ufWKCgKHoDcNkK9s2JjoLfs3Kh2YJDJc",
+      "toUserAccount": "BqnpCdDLPRjiJyzxEn8DyNnYMJZ7YhBxEGpXr7PeTkFT",
+      "fromTokenAccount": "BYNHmeD3jLWxHYBpUjPA2JaXjpNi1jFQqLeUTqUHHk2h",
+      "toTokenAccount": "H3fSgd9v1LUfGnqJ3TLHDfRz65rnWQVc5QmgDq7UGP69",
+      "tokenAmount": "18660274",
+      "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+    },
+    {
+      "fromUserAccount": "H9Hkeinmpgr9ufWKCgKHoDcNkK9s2JjoLfs3Kh2YJDJc",
+      "toUserAccount": "rXhAofQCT7NN9TUqiKD4BWMpPiyGJjGaXj5uWLiCTmp",
+      "fromTokenAccount": "BYNHmeD3jLWxHYBpUjPA2JaXjpNi1jFQqLeUTqUHHk2h",
+      "toTokenAccount": "Hhmdo5cGEHDJFAteD4wP3nPwEiQQtJbfgWYUJTFaqSEP",
+      "tokenAmount": "18678",
+      "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+    }
+  ],
+  "accountData": [
+    {
+      "account": "BqnpCdDLPRjiJyzxEn8DyNnYMJZ7YhBxEGpXr7PeTkFT",
+      "nativeBalanceChange": -1008500000,
+      "tokenBalanceChanges": [
+        {
+          "userAccount": "BqnpCdDLPRjiJyzxEn8DyNnYMJZ7YhBxEGpXr7PeTkFT",
+          "tokenAccount": "H3fSgd9v1LUfGnqJ3TLHDfRz65rnWQVc5QmgDq7UGP69",
+          "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          "rawTokenAmount": {
+            "tokenAmount": "18660274",
+            "decimals": 6
+          }
+        }
+      ]
+    },
+    {
+      "account": "H9Hkeinmpgr9ufWKCgKHoDcNkK9s2JjoLfs3Kh2YJDJc",
+      "nativeBalanceChange": 996500000,
+      "tokenBalanceChanges": [
+        {
+          "userAccount": "H9Hkeinmpgr9ufWKCgKHoDcNkK9s2JjoLfs3Kh2YJDJc",
+          "tokenAccount": "BYNHmeD3jLWxHYBpUjPA2JaXjpNi1jFQqLeUTqUHHk2h",
+          "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          "rawTokenAmount": {
+            "tokenAmount": "-18678952",
+            "decimals": 6
+          }
+        }
+      ]
+    },
+    {
+      "account": "2wmVCSfPxGPjrnMMn7rchp4uaeoTqN39mXFC2zhPdri9",
+      "nativeBalanceChange": 3500000,
+      "tokenBalanceChanges": []
+    },
+    {
+      "account": "rXhAofQCT7NN9TUqiKD4BWMpPiyGJjGaXj5uWLiCTmp",
+      "nativeBalanceChange": 0,
+      "tokenBalanceChanges": [
+        {
+          "userAccount": "rXhAofQCT7NN9TUqiKD4BWMpPiyGJjGaXj5uWLiCTmp",
+          "tokenAccount": "Hhmdo5cGEHDJFAteD4wP3nPwEiQQtJbfgWYUJTFaqSEP",
+          "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          "rawTokenAmount": {
+            "tokenAmount": "18678",
+            "decimals": 6
+          }
+        }
+      ]
+    }
+  ],
+  "instructions": [
+    {
+      "accounts": ["..."],
+      "data": "...",
+      "programId": "JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB",
+      "innerInstructions": []
+    }
+  ]
+} 
