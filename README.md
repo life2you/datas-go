@@ -10,6 +10,7 @@
 - Redis存储：持久化存储区块数据，支持高效检索
 - 交易解析：解析不同类型的交易和指令
 - Helius API：支持高级区块链数据查询和丰富的交易数据
+- Helius Webhook：支持监控Solana区块链上的事件，并在事件发生时通过回调URL接收通知
 
 ## 安装
 
@@ -485,6 +486,164 @@ func ParseSwapTransaction(tx *ParsedTransaction) string {
 2. 选择 "运行和调试" 面板
 3. 从下拉菜单中选择 "调试交易解析" 或 "测试 Swap 解析器"
 4. 按 F5 开始调试
+
+## Helius Webhook 功能
+
+Helius Webhook允许您监控Solana区块链上的事件，并在事件发生时通过回调URL接收通知。这个功能使您能够构建事件驱动的应用程序，对链上活动实时响应。
+
+### 支持的事件类型
+
+- NFT销售
+- NFT上架
+- NFT出价
+- 代币交换
+- 代币铸造
+- 代币转账
+- 等其他Solana链上事件
+
+### 使用方法
+
+#### 1. 配置
+
+在配置文件`config.yaml`中添加Webhook配置:
+
+```yaml
+helius_webhook:
+  api_key: "你的Helius API密钥"
+  callback_url: "https://你的回调URL.com/webhook"
+```
+
+#### 2. 初始化Webhook客户端
+
+```go
+import (
+    "github.com/life2you/datas-go/configs"
+    "github.com/life2you/datas-go/rpc"
+)
+
+func main() {
+    // 加载配置
+    configs.LoadConfig("config.yaml")
+    
+    // 初始化Webhook客户端
+    webhookClient := rpc.NewHeliusWebhookClient(&configs.GlobalConfig.HeliusWebhook)
+    
+    // ... 后续代码
+}
+```
+
+#### 3. 创建Webhook
+
+```go
+webhook, err := webhookClient.CreateWebhook(rpc.Webhook{
+    Webhook:          configs.GlobalConfig.HeliusWebhook.CallbackURL,
+    WebhookType:      rpc.EnhancedWebhook,
+    AccountAddresses: []string{"你要监控的Solana地址"},
+    TransactionTypes: []rpc.TransactionType{
+        rpc.TransactionTypeNFTSale,
+        rpc.TransactionTypeTokenTransfer,
+    },
+})
+if err != nil {
+    log.Fatalf("创建Webhook失败: %v", err)
+}
+log.Printf("成功创建Webhook，ID: %s", webhook.ID)
+```
+
+#### 4. 处理接收到的Webhook事件
+
+在您的HTTP服务器中设置处理Webhook的路由:
+
+```go
+import (
+    "io"
+    "net/http"
+    
+    "github.com/life2you/datas-go/rpc"
+    "github.com/life2you/datas-go/logger"
+)
+
+func setupRoutes() {
+    http.HandleFunc("/webhook", func(w http.ResponseWriter, r *http.Request) {
+        if r.Method != http.MethodPost {
+            http.Error(w, "仅支持POST请求", http.StatusMethodNotAllowed)
+            return
+        }
+
+        // 读取请求体
+        body, err := io.ReadAll(r.Body)
+        if err != nil {
+            logger.Error("读取Webhook请求体失败", zap.Error(err))
+            http.Error(w, "读取请求失败", http.StatusInternalServerError)
+            return
+        }
+        defer r.Body.Close()
+
+        // 处理Webhook事件
+        if err := rpc.HandleWebhookEvent(body, myCustomHandler); err != nil {
+            logger.Error("处理Webhook事件失败", zap.Error(err))
+            http.Error(w, "处理事件失败", http.StatusInternalServerError)
+            return
+        }
+
+        // 返回成功
+        w.WriteHeader(http.StatusOK)
+        w.Write([]byte("OK"))
+    })
+}
+
+// 自定义处理函数
+func myCustomHandler(events []rpc.WebhookEvent) error {
+    for _, event := range events {
+        // 处理事件...
+        logger.Info("收到事件", 
+            zap.String("类型", event.Type),
+            zap.String("签名", event.Signature))
+    }
+    return nil
+}
+```
+
+#### 5. 管理Webhook
+
+```go
+// 获取所有Webhook
+webhooks, err := webhookClient.GetWebhooks()
+if err != nil {
+    log.Fatalf("获取Webhook列表失败: %v", err)
+}
+
+// 获取特定Webhook
+webhook, err := webhookClient.GetWebhook("webhook-id")
+if err != nil {
+    log.Fatalf("获取Webhook失败: %v", err)
+}
+
+// 编辑Webhook
+updatedWebhook, err := webhookClient.EditWebhook("webhook-id", rpc.Webhook{
+    WebhookType:      rpc.EnhancedWebhook,
+    AccountAddresses: []string{"新的监控地址"},
+    TransactionTypes: []rpc.TransactionType{rpc.TransactionTypeAll},
+})
+if err != nil {
+    log.Fatalf("编辑Webhook失败: %v", err)
+}
+
+// 删除Webhook
+err = webhookClient.DeleteWebhook("webhook-id")
+if err != nil {
+    log.Fatalf("删除Webhook失败: %v", err)
+}
+```
+
+### 使用场景
+
+- **机器人操作**: 当NFT在特定市场上架时触发"NFT购买"操作
+- **监控与警报**: 当程序发出特定日志时触发警报系统集成
+- **事件驱动索引**: 将特定程序的任何交易直接发送到您的数据库或后端
+- **通知与活动跟踪**: 在钱包间转账时发送通知
+- **分析与日志**: 将事件发送到数据分析管道以查看趋势
+- **工作流自动化**: 当特定事件发生时触发一系列操作
 
 ## 许可证
 

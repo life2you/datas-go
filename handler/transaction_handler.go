@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/life2you/datas-go/logger"
+	"github.com/life2you/datas-go/models"
 	"github.com/life2you/datas-go/models/resp"
 	"github.com/life2you/datas-go/rpc"
 	"github.com/life2you/datas-go/storage"
@@ -25,15 +26,13 @@ func StartProcessTransactionQueue() {
 		logger.Error("没有可用的API客户端")
 		return
 	}
-	transactionItem, err := storage.GlobalRedisClient.LPopTransactionQueue(ctx)
-	if err != nil {
-		logger.Error("从队列获取交易批次失败", zap.Error(err))
+	// transactionItem, err := storage.GlobalRedisClient.LPopTransactionQueue(ctx)
+	transactionItemAny, _, ok := storage.GlobalTransactionQueue.Pop()
+	if !ok {
+		time.Sleep(1000 * time.Millisecond)
 		return
 	}
-	if transactionItem == nil {
-		logger.Debug("队列已空，结束处理")
-		return
-	}
+	transactionItem := transactionItemAny.(models.TransactionQueueModel)
 	signatures := slices.Chunk(transactionItem.Signatures, 50)
 	var wg sync.WaitGroup
 	var i = 0
@@ -43,7 +42,7 @@ func StartProcessTransactionQueue() {
 		wg.Add(1)
 		go func(clientIndex int, signature []string) {
 			defer wg.Done()
-			processTransactionBatch(ctx, clientIndex, transactionItem.BlockSlot, signature...)
+			processTransactionBatch(ctx, clientIndex, transactionItem.Slot, signature...)
 		}(clientIndex, signature)
 		i++
 
@@ -51,7 +50,7 @@ func StartProcessTransactionQueue() {
 	// 等待所有处理完成
 	wg.Wait()
 	logger.Info("交易数据解析完成，区块  ",
-		zap.Any("solana_slot", transactionItem.BlockSlot))
+		zap.Any("solana_slot", transactionItem.Slot))
 }
 
 // 并行处理交易数据
@@ -100,9 +99,8 @@ func processTransactionBatch(ctx context.Context, clientIndex int, blockSlot uin
 			len(transaction.TransactionError.InstructionError) > 0 {
 			continue
 		}
-
 		if slices.Contains(resp.NeedToParseTransactionType, transaction.Type) {
-
+			logger.Info("解析交易", zap.Any("transaction", transaction))
 			// 存储交易数据
 			if err := storage.GlobalRedisClient.StoreHash(ctx, transaction.Source, transaction.Source, string(transaction.Type), 0); err != nil {
 				logger.Error("存储交易哈希失败1", zap.Error(err))

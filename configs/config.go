@@ -19,6 +19,7 @@ type Config struct {
 	WebSocket         WebSocketConfig         `mapstructure:"websocket"`
 	HeliusAPI         HeliusAPIConfig         `mapstructure:"helius_api"`
 	HeliusEnhancedAPI HeliusEnhancedAPIConfig `mapstructure:"helius_enhanced_api"`
+	HeliusWebhook     HeliusWebhookConfig     `mapstructure:"helius_webhook"`
 }
 
 // AppConfig 应用基本配置
@@ -76,6 +77,12 @@ type HeliusEnhancedAPIConfig struct {
 type ProxyConfig struct {
 	Enabled bool   `mapstructure:"enabled"` // 是否启用代理
 	URL     string `mapstructure:"url"`     // 代理服务器URL
+}
+
+// HeliusWebhookConfig Helius Webhook配置
+type HeliusWebhookConfig struct {
+	APIKey      string `mapstructure:"api_key"`      // Helius API密钥
+	CallbackURL string `mapstructure:"callback_url"` // Webhook回调URL
 }
 
 // 全局配置实例
@@ -185,6 +192,10 @@ func setDefaultConfig(v *viper.Viper) {
 	v.SetDefault("websocket.api_key", "")
 	v.SetDefault("websocket.reconnect_interval", 5*time.Second)
 	v.SetDefault("websocket.proxy_url", "")
+
+	// Helius Webhook 配置
+	v.SetDefault("helius_webhook.api_key", "")
+	v.SetDefault("helius_webhook.callback_url", "")
 }
 
 // createDefaultConfigFile 创建默认配置文件
@@ -239,6 +250,11 @@ websocket:
   api_key: ""            # Helius API密钥
   reconnect_interval: 5s # 重连间隔
   proxy_url: ""          # 代理服务器URL
+
+# Helius Webhook 配置
+helius_webhook:
+  api_key: ""            # Helius API密钥
+  callback_url: ""       # Webhook回调URL
 `
 
 	// 写入配置文件

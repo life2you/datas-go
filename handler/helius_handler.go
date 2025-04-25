@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 
 	"github.com/life2you/datas-go/logger"
@@ -25,5 +24,6 @@ func HeliusSlotHandler(result json.RawMessage) {
 
 	logger.Debug("收到新槽位通知", zap.Uint64("slot", slotInfo.Slot))
 
-	storage.GlobalRedisClient.StoreBlock(context.Background(), slotInfo.Slot)
+	// storage.GlobalRedisClient.StoreBlock(context.Background(), slotInfo.Slot)
+	storage.GlobalBlockQueue.Push(slotInfo.Slot, int64(slotInfo.Slot))
 }

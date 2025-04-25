@@ -31,6 +31,9 @@ func main() {
 		logger.Info("WebSocket连接成功")
 	}
 
+	// 5. 初始化队列
+	initQueue()
+
 	// 5. 配置WebSocket
 	configs.GlobalConfig.WebSocket.OnConnect = rpcCallBack
 
@@ -95,4 +98,8 @@ func initStartService() {
 	service.ScanBlockQueue()
 	service.ProcessTransactionQueue()
 	logger.Info("所有服务已启动: 区块队列扫描服务、交易队列处理服务")
+}
+
+func initQueue() {
+	storage.InitQueue()
 }
