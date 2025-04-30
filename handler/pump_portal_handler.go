@@ -9,8 +9,8 @@ import (
 )
 
 func PumpPortalHandler(message json.RawMessage) {
-	logger.Info("PumpPortalHandler", zap.String("message", string(message)))
-	var msg resp.NewToken
+	//logger.Info("PumpPortalHandler", zap.String("message", string(message)))
+	var msg resp.ClassifyType
 	err := json.Unmarshal(message, &msg)
 	if err != nil {
 		logger.Error("PumpPortalHandler", zap.String("error", err.Error()))
@@ -20,9 +20,11 @@ func PumpPortalHandler(message json.RawMessage) {
 		return
 	}
 	switch msg.TxType {
-	case "create":
-		logger.Info("create", zap.String("message", string(message)))
+	case resp.Create:
+	//logger.Info("create", zap.String("message", string(message)))
+	case resp.Migrate:
+
 	default:
-		logger.Info(msg.TxType, zap.String("message", string(message)))
+		logger.Info(string(msg.TxType), zap.String("message", string(message)))
 	}
 }
