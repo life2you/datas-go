@@ -187,6 +187,74 @@ func main() {
     // 关闭连接
     client.Close()
 }
+
+### PumpPortal WebSocket客户端
+
+PumpPortal WebSocket客户端提供了实时订阅PumpPortal数据API，用于接收代币创建、交易等实时数据。
+
+```go
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/life2you/datas-go/rpc"
+)
+
+func main() {
+	// 创建PumpPortal客户端
+	options := rpc.DefaultPumpPortalOptions()
+	client := rpc.NewPumpPortalClient(options)
+
+	// 建立连接
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := client.Connect(ctx); err != nil {
+		log.Fatalf("连接PumpPortal失败: %v", err)
+	}
+	defer client.Close()
+
+	// 处理新代币创建事件
+	newTokenHandler := func(data json.RawMessage) {
+		var token map[string]interface{}
+		if err := json.Unmarshal(data, &token); err != nil {
+			log.Printf("解析新代币数据失败: %v", err)
+			return
+		}
+		log.Printf("收到新代币创建事件: %+v", token)
+	}
+
+	// 订阅新代币创建
+	if err := client.SubscribeNewToken(newTokenHandler); err != nil {
+		log.Printf("订阅新代币创建失败: %v", err)
+	}
+
+	// 订阅特定代币的交易
+	tokenAddresses := []string{"91WNez8D22NwBssQbkzjy4s2ipFrzpmn5hfvWVe2aY5p"}
+	if err := client.SubscribeTokenTrade(tokenAddresses, func(data json.RawMessage) {
+		var trade map[string]interface{}
+		json.Unmarshal(data, &trade)
+		log.Printf("收到代币交易事件: %+v", trade)
+	}); err != nil {
+		log.Printf("订阅代币交易失败: %v", err)
+	}
+
+	// 等待中断信号退出
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	<-sigCh
+
+	// 取消订阅
+	client.UnsubscribeNewToken()
+	client.UnsubscribeTokenTrade(tokenAddresses)
+}
 ```
 
 ### Redis存储

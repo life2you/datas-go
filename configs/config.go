@@ -19,7 +19,7 @@ type Config struct {
 	WebSocket         WebSocketConfig         `mapstructure:"websocket"`
 	HeliusAPI         HeliusAPIConfig         `mapstructure:"helius_api"`
 	HeliusEnhancedAPI HeliusEnhancedAPIConfig `mapstructure:"helius_enhanced_api"`
-	HeliusWebhook     HeliusWebhookConfig     `mapstructure:"helius_webhook"`
+	PumpPortal        PumpPortalOptions       `mapstructure:"pump_portal"`
 }
 
 // AppConfig 应用基本配置
@@ -79,10 +79,10 @@ type ProxyConfig struct {
 	URL     string `mapstructure:"url"`     // 代理服务器URL
 }
 
-// HeliusWebhookConfig Helius Webhook配置
-type HeliusWebhookConfig struct {
-	APIKey      string `mapstructure:"api_key"`      // Helius API密钥
-	CallbackURL string `mapstructure:"callback_url"` // Webhook回调URL
+type PumpPortalOptions struct {
+	ProxyURL        string        `mapstructure:"proxy_url"`         // 代理服务器URL
+	ReconnectDelay  time.Duration `mapstructure:"reconnect_delay"`   // 重连延迟
+	MaxRetryAttempt int           `mapstructure:"max_retry_attempt"` // 最大重试次数
 }
 
 // 全局配置实例

@@ -74,3 +74,8 @@ helius_enhanced_api:
     - ""
   endpoint: ""
   proxy_url: ""
+
+# PumpPortal配置
+pump_portal:
+  reconnect_delay: 5s
+  max_retry_attempt: 10

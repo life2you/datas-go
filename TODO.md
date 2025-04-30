@@ -53,6 +53,22 @@
     - [x] 将 WebSocket 方式集成到区块解析器中，作为替代轮询的方式。
     - [x] 实现基于 BlockSubscribe 的区块数据存储功能。
 
+## PumpPortal WebSocket 功能
+
+- [x] **基础 PumpPortal WebSocket 客户端:**
+    - [x] 实现 WebSocket 连接到 PumpPortal 服务。
+    - [x] 实现自动重连机制。
+    - [x] 实现 ping/pong 心跳检测。
+
+- [x] **订阅功能:**
+    - [x] 实现新代币创建订阅 (subscribeNewToken)。
+    - [x] 实现代币交易订阅 (subscribeTokenTrade)。
+    - [x] 实现账户交易订阅 (subscribeAccountTrade)。
+    - [x] 实现代币迁移订阅 (subscribeMigration)。
+
+- [x] **PumpPortal 使用示例:**
+    - [x] 创建 PumpPortal WebSocket 使用示例。
+
 ## Helius API 功能
 
 - [x] **基本 Helius API 客户端:**

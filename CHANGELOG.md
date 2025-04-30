@@ -30,6 +30,14 @@
   - **支持处理接收到的Webhook事件**
   - **支持多种交易类型过滤，如NFT销售、代币转账等**
   - **添加了示例处理函数和使用说明**
+- **实现PumpPortal WebSocket客户端，支持连接PumpPortal实时数据API**
+  - **添加新代币创建事件订阅(subscribeNewToken)功能**
+  - **添加代币交易事件订阅(subscribeTokenTrade)功能**
+  - **添加账户交易事件订阅(subscribeAccountTrade)功能**
+  - **添加代币迁移事件订阅(subscribeMigration)功能**
+  - **实现自动重连和心跳检测机制**
+  - **支持通过代理连接PumpPortal WebSocket**
+  - **添加完整使用示例**
 
 ### 修复
 - 修复了RPC调用错误，在GetBlock方法中添加了maxSupportedTransactionVersion参数
